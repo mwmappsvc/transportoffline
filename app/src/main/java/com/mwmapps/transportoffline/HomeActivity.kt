@@ -100,9 +100,10 @@ class HomeActivity : AppCompatActivity() {
     private fun displayBusSchedules(busStop: BusStop) {
         Log.d("HomeActivity", "Displaying bus schedules for stop: ${busStop.stopId}")
         CoroutineScope(Dispatchers.IO).launch {
+            Log.d("HomeActivity", "Calling getBusSchedules for stopId: ${busStop.stopId}")
             val busSchedules = dataQuery.getBusSchedules(busStop.stopId)
             withContext(Dispatchers.Main) {
-                Log.d("HomeActivity", "Found ${busSchedules.size} bus schedules for stopId: ${busStop.stopId}")
+                Log.d("HomeActivity", "Received ${busSchedules.size} bus schedules for stopId: ${busStop.stopId}")
                 busSchedules.forEach { schedule ->
                     Log.d("HomeActivity", "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
                 }

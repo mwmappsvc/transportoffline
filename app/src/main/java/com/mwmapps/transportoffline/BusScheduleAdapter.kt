@@ -16,6 +16,10 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
     private val busSchedules = mutableListOf<BusSchedule>()
     private var isDisplayingBusStops = true
 
+    override fun getItemViewType(position: Int): Int {
+        return if (isDisplayingBusStops) VIEW_TYPE_BUS_STOP else VIEW_TYPE_BUS_SCHEDULE
+    }
+
     fun updateBusStops(newBusStops: List<BusStop>) {
         Log.d("BusScheduleAdapter", "Updating bus stops in adapter")
         busStops.clear()
@@ -33,7 +37,7 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return if (isDisplayingBusStops) {
+        return if (viewType == VIEW_TYPE_BUS_STOP) {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_stop, parent, false)
             BusStopViewHolder(view, onBusStopClick)
         } else {
@@ -43,7 +47,7 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (isDisplayingBusStops) {
+        if (getItemViewType(position) == VIEW_TYPE_BUS_STOP) {
             val busStop = busStops[position]
             (holder as BusStopViewHolder).bind(busStop)
         } else {
@@ -80,5 +84,10 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
             routeIdTextView.text = "Route ID: ${busSchedule.routeId}"
             routeNameTextView.text = "Route: ${busSchedule.routeShortName} - ${busSchedule.routeLongName}"
         }
+    }
+
+    companion object {
+        private const val VIEW_TYPE_BUS_STOP = 0
+        private const val VIEW_TYPE_BUS_SCHEDULE = 1
     }
 }
