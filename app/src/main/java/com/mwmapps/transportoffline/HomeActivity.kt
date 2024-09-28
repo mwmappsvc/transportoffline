@@ -7,9 +7,7 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +16,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.lifecycle.lifecycleScope
 
 class HomeActivity : AppCompatActivity() {
 
@@ -26,6 +27,18 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var adapter: BusScheduleAdapter
     private lateinit var databaseHelper: DatabaseHelper
     private lateinit var dataQuery: DataQuery
+    private lateinit var timeRangeSpinner: Spinner
+
+    // Enum class for time ranges
+    enum class TimeRange(val hours: Int, val displayName: String) {
+        ONE_HOUR(1, "Next Hour"),
+        TWO_HOURS(2, "Next 2 Hours"),
+        FOUR_HOURS(4, "Next 4 Hours");
+
+        companion object {
+            fun fromDisplayName(displayName: String): TimeRange? = values().find { it.displayName == displayName }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,11 +56,21 @@ class HomeActivity : AppCompatActivity() {
         searchBar = findViewById(R.id.search_bar)
         recyclerView = findViewById(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = BusScheduleAdapter { busStop ->
+        adapter = BusScheduleAdapter(mutableListOf(), mutableListOf(), true) { busStop ->
             Log.d("HomeActivity", "Bus stop clicked: ${busStop.stopId}")
             displayBusSchedules(busStop)
         }
         recyclerView.adapter = adapter
+
+        timeRangeSpinner = findViewById(R.id.time_range_spinner)
+        ArrayAdapter.createFromResource(
+            this,
+            R.array.time_ranges,
+            android.R.layout.simple_spinner_item
+        ).also { adapter ->
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            timeRangeSpinner.adapter = adapter
+        }
 
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
@@ -99,16 +122,46 @@ class HomeActivity : AppCompatActivity() {
 
     private fun displayBusSchedules(busStop: BusStop) {
         Log.d("HomeActivity", "Displaying bus schedules for stop: ${busStop.stopId}")
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             Log.d("HomeActivity", "Calling getBusSchedules for stopId: ${busStop.stopId}")
             val busSchedules = dataQuery.getBusSchedules(busStop.stopId)
+            val filteredSchedules = filterBusSchedules(busSchedules)
             withContext(Dispatchers.Main) {
-                Log.d("HomeActivity", "Received ${busSchedules.size} bus schedules for stopId: ${busStop.stopId}")
-                busSchedules.forEach { schedule ->
+                Log.d("HomeActivity", "Received ${filteredSchedules.size} bus schedules for stopId: ${busStop.stopId}")
+                filteredSchedules.forEach { schedule ->
                     Log.d("HomeActivity", "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
                 }
-                adapter.updateBusSchedules(busSchedules)
+                adapter.updateBusSchedules(filteredSchedules)
             }
         }
     }
+
+    private fun filterBusSchedules(busSchedules: List<BusSchedule>): List<BusSchedule> {
+        val timeRange = TimeRange.fromDisplayName(timeRangeSpinner.selectedItem.toString())?.hours ?: 1
+        val startTime = Calendar.getInstance().apply {
+            add(Calendar.MINUTE, -15)
+        }.time
+        val endTime = Calendar.getInstance().apply {
+            add(Calendar.HOUR, timeRange)
+            add(Calendar.MINUTE, 15)
+        }.time
+
+        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        return busSchedules.filter { schedule ->
+            val arrivalTime = dateFormat.parse(schedule.arrivalTime)
+            arrivalTime?.let {
+                it.after(startTime) && it.before(endTime)
+            } ?: false
+        }.map { schedule ->
+            schedule.copy(arrivalTime = convertTo12HourFormat(schedule.arrivalTime))
+        }
+    }
+
+    private fun convertTo12HourFormat(time: String): String {
+        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        val date = dateFormat.parse(time)
+        val newFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+        return newFormat.format(date)
+    }
 }
+

@@ -1,58 +1,46 @@
 package com.mwmapps.transportoffline
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-data class BusStop(val stopId: String, val stopName: String)
-data class BusSchedule(val stopSequence: Int, val arrivalTime: String, val routeId: String, val routeShortName: String, val routeLongName: String)
+class BusScheduleAdapter(
+    private val busStops: MutableList<BusStop>,
+    private val busSchedules: MutableList<BusSchedule>,
+    private var isDisplayingBusStops: Boolean,
+    private val onBusStopClick: (BusStop) -> Unit
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    private val busStops = mutableListOf<BusStop>()
-    private val busSchedules = mutableListOf<BusSchedule>()
-    private var isDisplayingBusStops = true
+    companion object {
+        private const val VIEW_TYPE_BUS_STOP = 0
+        private const val VIEW_TYPE_BUS_SCHEDULE = 1
+    }
 
     override fun getItemViewType(position: Int): Int {
         return if (isDisplayingBusStops) VIEW_TYPE_BUS_STOP else VIEW_TYPE_BUS_SCHEDULE
     }
 
-    fun updateBusStops(newBusStops: List<BusStop>) {
-        Log.d("BusScheduleAdapter", "Updating bus stops in adapter")
-        busStops.clear()
-        busStops.addAll(newBusStops)
-        isDisplayingBusStops = true
-        notifyDataSetChanged()
-    }
-
-    fun updateBusSchedules(newBusSchedules: List<BusSchedule>) {
-        Log.d("BusScheduleAdapter", "Updating bus schedules in adapter, size: ${newBusSchedules.size}")
-        busSchedules.clear()
-        busSchedules.addAll(newBusSchedules)
-        isDisplayingBusStops = false
-        notifyDataSetChanged()
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return if (viewType == VIEW_TYPE_BUS_STOP) {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_stop, parent, false)
-            BusStopViewHolder(view, onBusStopClick)
-        } else {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_schedule, parent, false)
-            BusScheduleViewHolder(view)
+        return when (viewType) {
+            VIEW_TYPE_BUS_STOP -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_stop, parent, false)
+                BusStopViewHolder(view, onBusStopClick)
+            }
+            VIEW_TYPE_BUS_SCHEDULE -> {
+                val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_schedule, parent, false)
+                BusScheduleViewHolder(view)
+            }
+            else -> throw IllegalArgumentException("Invalid view type")
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (getItemViewType(position) == VIEW_TYPE_BUS_STOP) {
-            val busStop = busStops[position]
-            (holder as BusStopViewHolder).bind(busStop)
+        if (isDisplayingBusStops) {
+            (holder as BusStopViewHolder).bind(busStops[position])
         } else {
-            val busSchedule = busSchedules[position]
-            (holder as BusScheduleViewHolder).bind(busSchedule)
+            (holder as BusScheduleViewHolder).bind(busSchedules[position])
         }
     }
 
@@ -66,7 +54,6 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
         fun bind(busStop: BusStop) {
             stopNameTextView.text = busStop.stopName
             itemView.setOnClickListener {
-                Log.d("BusScheduleAdapter", "Bus stop clicked: ${busStop.stopId}")
                 onBusStopClick(busStop)
             }
         }
@@ -79,15 +66,24 @@ class BusScheduleAdapter(private val onBusStopClick: (BusStop) -> Unit) : Recycl
         private val routeNameTextView: TextView = itemView.findViewById(R.id.route_name)
 
         fun bind(busSchedule: BusSchedule) {
-            stopSequenceTextView.text = "Stop Sequence: ${busSchedule.stopSequence}"
-            arrivalTimeTextView.text = "Arrival Time: ${busSchedule.arrivalTime}"
-            routeIdTextView.text = "Route ID: ${busSchedule.routeId}"
-            routeNameTextView.text = "Route: ${busSchedule.routeShortName} - ${busSchedule.routeLongName}"
+            stopSequenceTextView.text = busSchedule.stopSequence.toString()
+            arrivalTimeTextView.text = busSchedule.arrivalTime
+            routeIdTextView.text = busSchedule.routeId
+            routeNameTextView.text = busSchedule.routeLongName // Assuming routeLongName is the full route name
         }
     }
 
-    companion object {
-        private const val VIEW_TYPE_BUS_STOP = 0
-        private const val VIEW_TYPE_BUS_SCHEDULE = 1
+    fun updateBusStops(newBusStops: List<BusStop>) {
+        busStops.clear()
+        busStops.addAll(newBusStops)
+        isDisplayingBusStops = true
+        notifyDataSetChanged()
+    }
+
+    fun updateBusSchedules(newBusSchedules: List<BusSchedule>) {
+        busSchedules.clear()
+        busSchedules.addAll(newBusSchedules)
+        isDisplayingBusStops = false
+        notifyDataSetChanged()
     }
 }

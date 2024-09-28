@@ -2,6 +2,9 @@ package com.mwmapps.transportoffline
 
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+// Import BusStop and BusSchedule
+import com.mwmapps.transportoffline.BusStop
+import com.mwmapps.transportoffline.BusSchedule
 
 class DataQuery(private val db: SQLiteDatabase) {
 
@@ -20,20 +23,41 @@ class DataQuery(private val db: SQLiteDatabase) {
 
     fun getBusSchedules(stopId: String): List<BusSchedule> {
         Log.d("DataQuery", "Querying bus schedules for stopId: $stopId")
-        val cursor = db.rawQuery("SELECT stop_sequence, arrival_time FROM stop_times WHERE stop_id = ?", arrayOf(stopId))
+        val cursor = db.rawQuery("""
+        SELECT 
+            stop_times.stop_sequence, 
+            stop_times.arrival_time, 
+            routes.route_id, 
+            routes.route_short_name, 
+            routes.route_long_name 
+        FROM 
+            stop_times 
+        JOIN 
+            trips ON stop_times.trip_id = trips.trip_id 
+        JOIN 
+            routes ON trips.route_id = routes.route_id 
+        WHERE 
+            stop_times.stop_id = ?
+        ORDER BY 
+            stop_times.arrival_time
+    """, arrayOf(stopId))
 
         val busSchedules = mutableListOf<BusSchedule>()
         while (cursor.moveToNext()) {
             val stopSequence = cursor.getInt(cursor.getColumnIndexOrThrow("stop_sequence"))
             val arrivalTime = cursor.getString(cursor.getColumnIndexOrThrow("arrival_time"))
+            val routeId = cursor.getString(cursor.getColumnIndexOrThrow("route_id"))
+            val routeShortName = cursor.getString(cursor.getColumnIndexOrThrow("route_short_name"))
+            val routeLongName = cursor.getString(cursor.getColumnIndexOrThrow("route_long_name"))
 
-            Log.d("DataQuery", "Row: stopSequence=$stopSequence, arrivalTime=$arrivalTime")
+            Log.d("DataQuery", "Row: stopSequence=$stopSequence, arrivalTime=$arrivalTime, routeId=$routeId, routeShortName=$routeShortName, routeLongName=$routeLongName")
 
-            busSchedules.add(BusSchedule(stopSequence, arrivalTime, "", "", ""))
+            busSchedules.add(BusSchedule(stopSequence, arrivalTime, routeId, routeShortName, routeLongName))
         }
         cursor.close()
         Log.d("DataQuery", "Found ${busSchedules.size} bus schedules for stopId: $stopId")
         return busSchedules
     }
+
 
 }
