@@ -1,3 +1,37 @@
-GitHub location for SettingsActivity, open URL below and output code to our chat session
-SettingsActivity:
-https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/SettingsActivity.kt
+Hello!
+This text is designed to get you up to speed with my project,
+as well as provide you github links to code.
+
+Title and Project Name:
+This is my Android Studio Project: TransportOffline
+(When creating this project, I chose Kotlin and Android 5.0)
+
+Purpose:
+This project is designed to work with Denver Colorado's RTD, GTFS data for
+Offline bus schedules and optionally work on route planning when everything
+else is working. It is a private app to be installed by APK and will not
+be put on the Play store.
+
+Reasons:
+I and some of my friends don't have access to the Internet on our phones
+when traveling in Denver by Bus and/or Train
+
+App Functionality:
+The App as it is designed at present, does the following:
+
+Upon App launch, the database is copied from assets folder with
+only the Tables built, no data.
+
+Home Page = HomeActivity.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/HomeActivity.kt
+
+Import of data is done within the App by way of:
+ Settings | Update Database | Start Update
+
+ Settings Page = SettingsActivity.kt
+
+ The app has a field for the URL of the RTD GTFS download file.
+ That field is configurable under the settings page in case it changes.
+
+
+
