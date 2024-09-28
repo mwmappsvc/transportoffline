@@ -16,22 +16,258 @@ Reasons:
 I and some of my friends don't have access to the Internet on our phones
 when traveling in Denver by Bus and/or Train
 
+Android Studio Project Structure (tree)
+https://github.com/mwmappsvc/transportoffline/blob/master/docs/project_structure.txt
+
 App Functionality:
 The App as it is designed at present, does the following:
 
 Upon App launch, the database is copied from assets folder with
 only the Tables built, no data.
 
+DatabaseHelper.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/DatabaseHelper.kt
+
 Home Page = HomeActivity.kt
 https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/HomeActivity.kt
 
 Import of data is done within the App by way of:
- Settings | Update Database | Start Update
+Settings | Update Database | Start Update
 
- Settings Page = SettingsActivity.kt
+Settings Page = SettingsActivity.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/SettingsActivity.kt
 
- The app has a field for the URL of the RTD GTFS download file.
- That field is configurable under the settings page in case it changes.
+The app has a field for the URL of the RTD GTFS download file.
+That field is configurable under the settings page in case it changes.
+
+The app will then Download, Extract, Verify, and Compare GTFS data from RTD
+
+UpdateDatabaseActivity.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/UpdateDatabaseActivity.kt
+
+GtfsDownloader.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/GtfsDownloader.kt
+
+GtfsExtractor.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/GtfsExtractor.kt
+
+After extraction and compare, it will begin importing into database:
+
+DataImporter.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/DataImporter.kt
+
+I have some app UI functions to show progress
+of these tasks, and when completed, the user would go back to the app home
+to query data
+
+DataQuery.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/DataQuery.kt
+BusScheduleAdapter.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/BusScheduleAdapter.kt
+
+
+Additionally there is a logger:
+
+LoggingActivity.kt
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/java/com/mwmapps/transportoffline/LoggingActivity.kt
+
+Misc Items -
+
+AndroidManifest.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/AndroidManifest.xml
+
+Layouts:
+activity_home.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/activity_home.xml
+
+activity_logging.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/activity_logging.xml
+
+activity_settings.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/activity_settings.xml
+
+activity_update.database.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/activity_update_database.xml
+
+item_bus_schedule.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/item_bus_schedule.xml
+
+item_bus_stop.xml
+https://github.com/mwmappsvc/transportoffline/blob/master/app/src/main/res/layout/item_bus_stop.xml
+
+
+Current Status: Problem app displaying Bus Schedule during Search query
+Thought Process: Issue likely with mismatched data fields for Tables in database
+Check column order!
+
+
+
+
+SQL Commands used to build Tables:
+-- Table for agency.txt
+CREATE TABLE agency (
+    agency_id TEXT PRIMARY KEY,
+    agency_name TEXT,
+    agency_url TEXT,
+    agency_timezone TEXT,
+    agency_lang TEXT
+);
+
+-- Table for calendar.txt
+CREATE TABLE calendar (
+    service_id TEXT PRIMARY KEY,
+    start_date TEXT,
+    end_date TEXT,
+    monday INTEGER,
+    tuesday INTEGER,
+    wednesday INTEGER,
+    thursday INTEGER,
+    friday INTEGER,
+    saturday INTEGER,
+    sunday INTEGER
+);
+
+-- Table for calendar_dates.txt
+CREATE TABLE calendar_dates (
+    service_id TEXT,
+    date TEXT,
+    exception_type INTEGER,
+    PRIMARY KEY (service_id, date)
+);
+
+-- Table for feed_info.txt
+CREATE TABLE feed_info (
+    feed_publisher_name TEXT,
+    feed_publisher_url TEXT,
+    feed_lang TEXT,
+    feed_start_date TEXT,
+    feed_end_date TEXT,
+    feed_version TEXT
+);
+
+-- Table for routes.txt
+CREATE TABLE routes (
+    route_id TEXT PRIMARY KEY,
+    agency_id TEXT,
+    route_short_name TEXT,
+    route_long_name TEXT,
+    route_desc TEXT,
+    route_type INTEGER,
+    route_url TEXT,
+    route_color TEXT,
+    route_text_color TEXT
+);
+
+-- Table for shapes.txt
+CREATE TABLE shapes (
+    shape_id TEXT,
+    shape_pt_lat REAL,
+    shape_pt_lon REAL,
+    shape_pt_sequence INTEGER,
+    shape_dist_traveled REAL,
+    PRIMARY KEY (shape_id, shape_pt_sequence)
+);
+
+-- Table for stop_times.txt
+CREATE TABLE stop_times (
+    trip_id TEXT,
+    arrival_time TEXT,
+    departure_time TEXT,
+    stop_id TEXT,
+    stop_sequence INTEGER,
+    stop_headsign TEXT,
+    pickup_type INTEGER,
+    drop_off_type INTEGER,
+    shape_dist_traveled REAL,
+    timepoint INTEGER,
+    PRIMARY KEY (trip_id, stop_sequence)
+);
+
+-- Table for stops.txt
+CREATE TABLE stops (
+    stop_id TEXT PRIMARY KEY,
+    stop_code TEXT,
+    stop_name TEXT,
+    stop_desc TEXT,
+    stop_lat REAL,
+    stop_lon REAL,
+    zone_id TEXT,
+    stop_url TEXT,
+    location_type INTEGER,
+    parent_station TEXT,
+    stop_timezone TEXT,
+    wheelchair_boarding INTEGER
+);
+
+-- Table for trips.txt
+CREATE TABLE trips (
+    trip_id TEXT PRIMARY KEY,
+    route_id TEXT,
+    service_id TEXT,
+    trip_headsign TEXT,
+    direction_id INTEGER,
+    block_id TEXT,
+    shape_id TEXT
+);
+
+--------------------------------------------------------
+
+
+Snips of GTFS data (text files) to understand order of data fields
+and to understand data key relationships for database and queries:
+
+This is a sampling of each GTFS text file:
+
+stop_times.txt (sampling)
+trip_id,arrival_time,departure_time,stop_id,stop_sequence,stop_headsign,pickup_type,drop_off_type,shape_dist_traveled,timepoint
+114913840,17:22:00,17:22:00,17658,1,,,1,,
+114913840,17:23:00,17:23:00,17848,2,,,,,
+114913840,17:26:19,17:26:19,15145,3,,,,,
+
+stops.txt (sampling)
+stop_lat,wheelchair_boarding,stop_code,stop_lon,stop_timezone,stop_url,parent_station,stop_desc,stop_name,location_type,stop_id,zone_id
+39.767591,1,35234,-104.973545,,,,Vehicles Travelling East,Larimer St & Downing St,0,35234,
+39.764239,1,35232,-104.97787,,,,Vehicles Travelling East,Larimer St & 32nd St,0,35232,
+39.765885,1,35233,-104.975756,,,,Vehicles Travelling East,Larimer St & 34th St,0,35233,
+
+routes.txt (sampling)
+route_long_name,route_type,route_text_color,route_color,agency_id,route_id,route_url,route_desc,route_short_name
+Flatiron Flyer,3,FFFFFF,1E4286,RTD,FF5,http://www.rtd-denver.com/Schedules.shtml,This Route Travels Eastbound & Westbound,FF5
+Boulder / Lafayette via Baseline,3,FFFFFF,0076CE,RTD,225D,http://www.rtd-denver.com/Schedules.shtml,This Route Travels Eastbound & Westbound,225D
+
+trips.txt (sampling)
+block_id,route_id,direction_id,trip_headsign,shape_id,service_id,trip_id
+a_BOLT  4,BOLT,1,Dtwn Boulder,1276201,WK_merged_115183393,114913840
+a_BOLT  3,BOLT,1,Dtwn Boulder,1276201,WK_merged_115183393,114913841
+a_BOLT  5,BOLT,1,Dtwn Boulder,1276201,WK_merged_115183393,114913842
+
+shapes.txt (sampling)
+shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence,shape_dist_traveled
+1276058,39.741078,-104.98659,1,
+1276058,39.741011,-104.986565,2,
+1276058,39.741011,-104.986565,3,
+
+calendar.txt (sampling)
+service_id,start_date,end_date,monday,tuesday,wednesday,thursday,friday,saturday,sunday
+SA_3544,20240819,20240927,0,0,0,0,0,1,0
+SA_3545,20240815,20240927,0,0,0,0,0,1,0
+SA_3567,20240927,20240928,0,0,0,0,0,1,0
+
+agency.txt (entire file is just this)
+agency_url,agency_name,agency_timezone,agency_id,agency_lang
+http://rtd-denver.com,Regional Transportation District,America/Denver,RTD,en
+
+feed_info.txt (entire file is just this)
+feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version
+RTD,http://rtd-denver.com,en,20240526,20250104,Merged-33965M33947-20240926-040611-May24 and Sep24
+
+calendar_dates.txt (sampling)
+service_id,date,exception_type
+MT_merged_115183397,20240704,2
+MT_merged_115183397,20240527,2
+MT_merged_115183397,20240902,2
+
+
 
 
 
