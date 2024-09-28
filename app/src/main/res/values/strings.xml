@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TransportOffline</string>
+    <string name="settings_activity_label">Settings</string>
+    <string name="update_database_activity_label">Update Database</string>
+    <string name="logging_activity_label">Logging</string>
+    <string name="settings_icon_desc">Settings Icon</string>
+    <string name="search_icon_desc">Search</string>
+</resources>

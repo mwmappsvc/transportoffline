@@ -1,0 +1,80 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Update Database"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/start_update_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start Update" />
+
+    <Button
+        android:id="@+id/configure_url_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Configure URL" />
+
+    <TextView
+        android:id="@+id/download_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Download GTFS Data [  ]"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/extract_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Extract Data [  ]"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/verify_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Verify Files [  ]"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/import_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Import Data [  ]"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"/>
+
+    <TextView
+        android:id="@+id/final_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Update Result [Awaiting Result]"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:gravity="center_horizontal"/>
+
+</LinearLayout>
+
