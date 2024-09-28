@@ -73,11 +73,12 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
 
             while (reader.readLine().also { line = it } != null) {
                 val values = line!!.split(",").map { it.trim().replace("'", "''") }
-                if (values.size != columns.size) {
-                    Log.e("DataImporter", "Column count mismatch for table: $tableName. Expected ${columns.size}, but got ${values.size}")
+                if (values.size < columns.size) {
+                    Log.e("DataImporter", "Missing values for table: $tableName. Expected ${columns.size}, but got ${values.size}")
                     continue
                 }
-                // Map the values to the correct columns
+
+                // Map the values to the correct columns for each table
                 val mappedValues = when (tableName) {
                     "stops" -> listOf(
                         values[10], // stop_id
@@ -92,6 +93,62 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                         values[6],  // parent_station
                         values[4],  // stop_timezone
                         values[1]   // wheelchair_boarding
+                    )
+                    "stop_times" -> listOf(
+                        values[0],  // trip_id
+                        values[1],  // arrival_time
+                        values[2],  // departure_time
+                        values[3],  // stop_id
+                        values[4],  // stop_sequence
+                        values[5],  // stop_headsign
+                        values[6],  // pickup_type
+                        values[7],  // drop_off_type
+                        values[8],  // shape_dist_traveled
+                        if (values.size > 9) values[9] else null // timepoint
+                    )
+                    "trips" -> listOf(
+                        values[0],  // trip_id
+                        values[1],  // route_id
+                        values[2],  // service_id
+                        values[3],  // trip_headsign
+                        values[4],  // direction_id
+                        values[5],  // block_id
+                        values[6]   // shape_id
+                    )
+                    "routes" -> listOf(
+                        values[0],  // route_id
+                        values[1],  // agency_id
+                        values[2],  // route_short_name
+                        values[3],  // route_long_name
+                        values[4],  // route_desc
+                        values[5],  // route_type
+                        values[6],  // route_url
+                        values[7],  // route_color
+                        values[8]   // route_text_color
+                    )
+                    "calendar" -> listOf(
+                        values[0],  // service_id
+                        values[1],  // start_date
+                        values[2],  // end_date
+                        values[3],  // monday
+                        values[4],  // tuesday
+                        values[5],  // wednesday
+                        values[6],  // thursday
+                        values[7],  // friday
+                        values[8],  // saturday
+                        values[9]   // sunday
+                    )
+                    "calendar_dates" -> listOf(
+                        values[0],  // service_id
+                        values[1],  // date
+                        values[2]   // exception_type
+                    )
+                    "shapes" -> listOf(
+                        values[0],  // shape_id
+                        values[1],  // shape_pt_lat
+                        values[2],  // shape_pt_lon
+                        values[3],  // shape_pt_sequence
+                        values[4]   // shape_dist_traveled
                     )
                     else -> values
                 }
@@ -130,26 +187,21 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
             do {
                 val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
                 val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
-                val stopLat = cursor.getDouble(cursor.getColumnIndexOrThrow("stop_lat"))
-                val stopLon = cursor.getDouble(cursor.getColumnIndexOrThrow("stop_lon"))
-                Log.d("DataImporter", "Specific Stop - Stop ID: $stopId, Stop Name: $stopName, Latitude: $stopLat, Longitude: $stopLon")
+                Log.d("DataImporter", "Stop ID: $stopId, Stop Name: $stopName")
             } while (cursor.moveToNext())
-        } else {
-            Log.d("DataImporter", "No records found for stop number: $stopNumber")
         }
         cursor.close()
     }
 
     private fun logAllStopIds() {
         val cursor = db.rawQuery("SELECT stop_id FROM stops", null)
+        val stopIds = mutableListOf<String>()
         if (cursor.moveToFirst()) {
             do {
-                val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
-                Log.d("DataImporter", "Stop ID: $stopId")
+                stopIds.add(cursor.getString(cursor.getColumnIndexOrThrow("stop_id")))
             } while (cursor.moveToNext())
-        } else {
-            Log.d("DataImporter", "No records found in stops table")
         }
         cursor.close()
+        Log.d("DataImporter", "All stop IDs: ${stopIds.joinToString(", ")}")
     }
 }
