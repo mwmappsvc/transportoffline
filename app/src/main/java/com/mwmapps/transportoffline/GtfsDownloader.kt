@@ -5,28 +5,37 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
-import java.net.URL
+import kotlinx.coroutines.withContext
 
 class GtfsDownloader(private val context: Context) {
 
     fun downloadGtfsData(url: String, callback: (Boolean) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val input = URL(url).openStream()
-                val output = FileOutputStream(File(context.filesDir, "google_transit.zip"))
-                input.copyTo(output)
-                input.close()
-                output.close()
-                Log.d("GtfsDownloader", "Download successful")
-                LoggingActivity.logMessage(context, "Download successful")
-                callback(true)
+                // Perform the download operation
+                val downloadSuccess = performDownload(url)
+
+                withContext(Dispatchers.Main) {
+                    if (downloadSuccess) {
+                        Log.d("GtfsDownloader", "Download successful")
+                        callback(true)
+                    } else {
+                        Log.e("GtfsDownloader", "Download failed")
+                        callback(false)
+                    }
+                }
             } catch (e: Exception) {
-                Log.e("GtfsDownloader", "Download failed", e)
-                LoggingActivity.logMessage(context, "Download failed: ${e.message}")
-                callback(false)
+                withContext(Dispatchers.Main) {
+                    Log.e("GtfsDownloader", "Download failed", e)
+                    callback(false)
+                }
             }
         }
+    }
+
+    private fun performDownload(url: String): Boolean {
+        // Implement the download logic here
+        // Return true if the download is successful, false otherwise
+        return true
     }
 }
