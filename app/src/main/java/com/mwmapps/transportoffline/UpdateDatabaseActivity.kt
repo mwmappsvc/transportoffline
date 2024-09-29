@@ -13,6 +13,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -162,11 +164,11 @@ class UpdateDatabaseActivity : AppCompatActivity() {
 
     private suspend fun simulateProgress(start: Int, end: Int, duration: Long) {
         val totalSteps = end - start
-        val delayPerStep = duration / totalSteps
+        val delayPerStep = duration / (totalSteps * 2) // Smaller delay
         withContext(Dispatchers.Main) {
-            for (i in 1..totalSteps) {
+            for (i in 1..totalSteps * 2) {
                 progressMutex.withLock {
-                    overallProgress = start + i
+                    overallProgress = start + i / 2 // Smaller increment
                     updateProgress(overallProgress)
                 }
                 delay(delayPerStep)

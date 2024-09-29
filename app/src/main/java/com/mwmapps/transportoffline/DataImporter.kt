@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,6 +18,8 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
     companion object {
         private const val BATCH_SIZE = 1000 // Adjust this value as needed
     }
+
+    private val progressFlow = MutableSharedFlow<Int>()
 
     fun importData(progressUpdater: (Int) -> Unit): Boolean {
         var success = true
