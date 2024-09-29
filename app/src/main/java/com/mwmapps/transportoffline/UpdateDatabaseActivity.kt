@@ -1,30 +1,32 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import android.widget.Button
-import android.widget.TextView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.*
 import java.io.File
 
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var downloadStatus: TextView
-    private lateinit var extractStatus: TextView
-    private lateinit var verifyStatus: TextView
-    private lateinit var importStatus: TextView
-    private lateinit var finalStatus: TextView
+    private lateinit var currentTaskDescription: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var progressPercentage: TextView
     private lateinit var databaseHelper: DatabaseHelper
     private lateinit var dataImporter: DataImporter
     private lateinit var gtfsDownloader: GtfsDownloader
     private lateinit var gtfsExtractor: GtfsExtractor
+    private lateinit var busScheduleSearchButton: Button
+    private lateinit var startUpdateButton: Button
+    private var updateJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,30 +38,29 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         gtfsDownloader = GtfsDownloader(this)
         gtfsExtractor = GtfsExtractor(this)
 
-        val startUpdateButton: Button = findViewById(R.id.start_update_button)
-        val configureUrlButton: Button = findViewById(R.id.configure_url_button)
-        downloadStatus = findViewById(R.id.download_status)
-        extractStatus = findViewById(R.id.extract_status)
-        verifyStatus = findViewById(R.id.verify_status)
-        importStatus = findViewById(R.id.import_status)
-        finalStatus = findViewById(R.id.final_status)
+        startUpdateButton = findViewById(R.id.start_update_button)
+        currentTaskDescription = findViewById(R.id.current_task_description)
+        progressBar = findViewById(R.id.progress_bar)
+        progressPercentage = findViewById(R.id.progress_percentage)
+        busScheduleSearchButton = findViewById(R.id.bus_schedule_search_button)
 
         startUpdateButton.setOnClickListener {
-            Log.d("UpdateDatabaseActivity", "Start Update button clicked")
-            LoggingActivity.logMessage(this, "Start Update button clicked")
-            startUpdateProcess()
-        }
-
-        configureUrlButton.setOnClickListener {
-            Log.d("UpdateDatabaseActivity", "Configure URL button clicked")
-            LoggingActivity.logMessage(this, "Configure URL button clicked")
-            showUrlConfigurationDialog()
+            if (startUpdateButton.text == "Start Update") {
+                Log.d("UpdateDatabaseActivity", "Start Update button clicked")
+                LoggingActivity.logMessage(this, "Start Update button clicked")
+                startUpdateProcess()
+                startUpdateButton.text = "Please Wait"
+                startUpdateButton.isEnabled = false
+            }
         }
     }
 
     private fun startUpdateProcess() {
         // Reset final status
-        finalStatus.text = "Update Result [Awaiting Result]"
+        currentTaskDescription.text = "Starting update process..."
+        progressBar.visibility = View.VISIBLE
+        progressPercentage.visibility = View.VISIBLE
+        updateProgress(0)
 
         // Log existing tables
         databaseHelper.logExistingTables()
@@ -67,34 +68,42 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         // Download GTFS data
         val url = sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip")
         if (url != null) {
-            CoroutineScope(Dispatchers.IO).launch {
+            updateJob = CoroutineScope(Dispatchers.IO).launch {
                 LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Starting download from URL: $url")
-                gtfsDownloader.downloadGtfsData(url, ::onDownloadComplete)
+                withContext(Dispatchers.Main) {
+                    currentTaskDescription.text = "Downloading GTFS Data..."
+                    launch { simulateProgress(0, 25, 10000) } // Simulate download progress (0-25%, 10 seconds)
+                }
+                gtfsDownloader.downloadGtfsData(url) { success ->
+                    CoroutineScope(Dispatchers.Main).launch {
+                        currentTaskDescription.text = if (success) "Download GTFS Data [Success]" else "Download GTFS Data [Fail]"
+                        if (success) {
+                            launch { simulateProgress(25, 40, 5000) } // Simulate extraction progress (25-40%, 5 seconds)
+                            gtfsExtractor.extractData { extractSuccess ->
+                                onExtractComplete(extractSuccess)
+                            }
+                        } else {
+                            showFailureDialog()
+                        }
+                    }
+                }
             }
         }
     }
 
-    private fun onDownloadComplete(success: Boolean) {
-        CoroutineScope(Dispatchers.Main).launch {
-            if (success) {
-                downloadStatus.text = "Download GTFS Data [Success]"
-                gtfsExtractor.extractData(::onExtractComplete)
-            } else {
-                downloadStatus.text = "Download GTFS Data [Fail]"
-                updateFinalStatus()
-            }
-        }
-    }
 
     private fun onExtractComplete(success: Boolean) {
-        CoroutineScope(Dispatchers.Main).launch {
-            if (success) {
-                extractStatus.text = "Extract Data [Success]"
-                verifyFiles()
-            } else {
-                extractStatus.text = "Extract Data [Fail]"
-                updateFinalStatus()
+        if (success) {
+            currentTaskDescription.text = "Extract Data [Success]"
+            CoroutineScope(Dispatchers.Main).launch {
+                simulateProgress(40, 55, 5000) // Simulate verification progress (40-55%, 5 seconds)
             }
+            CoroutineScope(Dispatchers.IO).launch {
+                verifyFiles()
+            }
+        } else {
+            currentTaskDescription.text = "Extract Data [Fail]"
+            showFailureDialog()
         }
     }
 
@@ -110,54 +119,92 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             Log.d("UpdateDatabaseActivity", "Verification successful")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification successful")
             withContext(Dispatchers.Main) {
-                verifyStatus.text = "Verify Files [Success]"
-                importData()
+                currentTaskDescription.text = "Verify Files [Success]"
+                launch { simulateProgress(55, 70, 5000) } // Simulate import progress (55-70%, 5 seconds)
+                currentTaskDescription.text = "Importing Data..."
+                CoroutineScope(Dispatchers.IO).launch {
+                    importData()
+                }
             }
         } else {
             Log.e("UpdateDatabaseActivity", "Verification failed: No files found")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification failed: No files found")
             withContext(Dispatchers.Main) {
-                verifyStatus.text = "Verify Files [Fail]"
-                updateFinalStatus()
+                currentTaskDescription.text = "Verify Files [Fail]"
+                showFailureDialog()
             }
         }
     }
 
-    private suspend fun importData() {
-        withContext(Dispatchers.IO) {
-            val success = dataImporter.importData()
+    private fun importData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            val success = dataImporter.importData { progress ->
+                CoroutineScope(Dispatchers.Main).launch {
+                    updateProgress(progress)
+                }
+            }
             Log.d("UpdateDatabaseActivity", "Import process completed")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Import process completed")
             withContext(Dispatchers.Main) {
-                importStatus.text = if (success) "Import Data [Success]" else "Import Data [Fail]"
+                currentTaskDescription.text = if (success) "Import Data [Success]" else "Import Data [Fail]"
+                updateProgress(100) // Update progress
                 updateFinalStatus()
             }
         }
     }
 
-    private fun updateFinalStatus() {
-        if (downloadStatus.text.contains("Success") &&
-            extractStatus.text.contains("Success") &&
-            verifyStatus.text.contains("Success") &&
-            importStatus.text.contains("Success")) {
-            finalStatus.text = "Database Updated Successfully, Return to Main Page"
-        } else {
-            finalStatus.text = "Failed to Update Database, Please Contact Support"
+
+    private suspend fun simulateProgress(start: Int, end: Int, duration: Long) {
+        val totalSteps = end - start
+        val delayPerStep = duration / totalSteps
+        withContext(Dispatchers.Main) {
+            for (i in 1..totalSteps) {
+                updateProgress(start + i)
+                delay(delayPerStep)
+            }
         }
     }
 
-    private fun showUrlConfigurationDialog() {
-        val builder = AlertDialog.Builder(this)
-        val input = android.widget.EditText(this)
-        input.setText(sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip"))
-        builder.setTitle("Configure URL")
-        builder.setView(input)
-        builder.setPositiveButton("OK") { dialog, _ ->
-            sharedPreferences.edit().putString("gtfs_url", input.text.toString()).apply()
-            LoggingActivity.logMessage(this, "URL configured to: ${input.text}")
-            dialog.dismiss()
+    private fun updateProgress(progress: Int) {
+        progressBar.progress = progress
+        progressPercentage.text = "$progress%"
+    }
+
+    private fun updateFinalStatus() {
+        if (currentTaskDescription.text.contains("Success")) {
+            currentTaskDescription.text = "Database Updated Successfully, Return to Main Page"
+            startUpdateButton.text = "Bus Scheduler"
+            startUpdateButton.isEnabled = true
+            startUpdateButton.setOnClickListener {
+                val intent = Intent(this, HomeActivity::class.java)
+                startActivity(intent)
+                finish() // Close the update database activity
+            }
+            busScheduleSearchButton.isEnabled = true
+            busScheduleSearchButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple_500))
+            progressBar.visibility = View.GONE
+            progressPercentage.visibility = View.GONE
+        } else {
+            currentTaskDescription.text = "Failed to Update Database, Please Contact Support"
         }
-        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
+    }
+
+    private fun showFailureDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Update Failed")
+        builder.setMessage("The update process failed. Please choose an option below:")
+        builder.setPositiveButton("Home Page") { dialog, _ ->
+            // Navigate to Home Page
+            dialog.dismiss()
+            finish() // Close the current activity
+        }
+        builder.setNegativeButton("Settings Page") { dialog, _ ->
+            // Navigate to Settings Page
+            dialog.dismiss()
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
+            finish() // Close the current activity
+        }
         builder.show()
     }
 }

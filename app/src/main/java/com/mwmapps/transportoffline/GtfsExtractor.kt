@@ -34,11 +34,15 @@ class GtfsExtractor(private val context: Context) {
                 inputStream.close()
                 Log.d("GtfsExtractor", "Extraction successful")
                 LoggingActivity.logMessage(context, "Extraction successful")
-                callback(true)
+                withContext(Dispatchers.Main) {
+                    callback(true)
+                }
             } catch (e: Exception) {
                 Log.e("GtfsExtractor", "Extraction failed", e)
                 LoggingActivity.logMessage(context, "Extraction failed: ${e.message}")
-                callback(false)
+                withContext(Dispatchers.Main) {
+                    callback(false)
+                }
             }
         }
     }

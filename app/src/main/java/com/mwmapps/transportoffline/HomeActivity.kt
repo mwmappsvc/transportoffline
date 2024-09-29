@@ -47,6 +47,10 @@ class HomeActivity : AppCompatActivity() {
         databaseHelper = DatabaseHelper(this)
         dataQuery = DataQuery(databaseHelper.readableDatabase, this)
 
+        // Log data from stop_times and trips tables
+        dataQuery.logStopTimes()
+        dataQuery.logTrips()
+
         val settingsIcon: ImageView = findViewById(R.id.settings_icon)
         settingsIcon.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
@@ -158,7 +162,6 @@ class HomeActivity : AppCompatActivity() {
         LoggingActivity.logMessage(this, "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
         return filteredSchedules
     }
-
 
     private fun convertTo12HourFormat(time: String): String {
         val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())

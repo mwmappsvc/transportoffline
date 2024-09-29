@@ -1,11 +1,11 @@
 package com.mwmapps.transportoffline
 
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import java.io.BufferedReader
@@ -18,20 +18,20 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         private const val BATCH_SIZE = 1000 // Adjust this value as needed
     }
 
-    fun importData(): Boolean {
+    fun importData(progressCallback: (Int) -> Unit): Boolean {
         var success = true
         db.beginTransaction()
         runBlocking {
             val jobs = listOf(
-                async { success = success && importTableData("gtfs_data/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang")) },
-                async { success = success && importTableData("gtfs_data/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")) },
-                async { success = success && importTableData("gtfs_data/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type")) },
-                async { success = success && importTableData("gtfs_data/feed_info.txt", "feed_info", listOf("feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version")) },
-                async { success = success && importTableData("gtfs_data/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color")) },
-                async { success = success && importTableData("gtfs_data/shapes.txt", "shapes", listOf("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled")) },
-                async { success = success && importTableData("gtfs_data/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding")) },
-                async { success = success && importTableData("gtfs_data/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint")) },
-                async { success = success && importTableData("gtfs_data/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id")) }
+                async { success = success && importTableData("gtfs_data/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/feed_info.txt", "feed_info", listOf("feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/shapes.txt", "shapes", listOf("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), progressCallback) },
+                async { success = success && importTableData("gtfs_data/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), progressCallback) }
             )
             jobs.awaitAll()
         }
@@ -51,7 +51,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         return success
     }
 
-    private fun importTableData(fileName: String, tableName: String, columns: List<String>): Boolean {
+    private fun importTableData(fileName: String, tableName: String, columns: List<String>, progressCallback: (Int) -> Unit): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
             LoggingActivity.logMessage(context, "Starting import for table: $tableName")
@@ -65,13 +65,19 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
             val reader = BufferedReader(FileReader(file))
             reader.readLine() // Skip header line
 
+            val totalRows = reader.lineSequence().count()
+            reader.close()
+
+            val reader2 = BufferedReader(FileReader(file))
+            reader2.readLine() // Skip header line
+
             val sql = StringBuilder("INSERT OR REPLACE INTO $tableName (${columns.joinToString(",")}) VALUES ")
             val valuesList = mutableListOf<String>()
             var rowCount = 0
             var batchCount = 0
             var line: String?
 
-            while (reader.readLine().also { line = it } != null) {
+            while (reader2.readLine().also { line = it } != null) {
                 val values = line!!.split(",").map { it.trim().replace("'", "''") }
                 if (values.size < columns.size) {
                     Log.e("DataImporter", "Missing values for table: $tableName. Expected ${columns.size}, but got ${values.size}")
@@ -95,7 +101,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                         values[1]   // wheelchair_boarding
                     )
                     "stop_times" -> listOf(
-                        values[0],  // trip_id
+                        values[0].trim(),  // trip_id
                         values[1],  // arrival_time
                         values[2],  // departure_time
                         values[3],  // stop_id
@@ -107,7 +113,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                         if (values.size > 9) values[9] else null // timepoint
                     )
                     "trips" -> listOf(
-                        values[0],  // trip_id
+                        values[0].trim(),  // trip_id
                         values[1],  // route_id
                         values[2],  // service_id
                         values[3],  // trip_headsign
@@ -150,58 +156,63 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                         values[3],  // shape_pt_sequence
                         values[4]   // shape_dist_traveled
                     )
+                    "feed_info" -> listOf(
+                        values[0],  // feed_publisher_name
+                        values[1],  // feed_publisher_url
+                        values[2],  // feed_lang
+                        values[3],  // feed_start_date
+                        values[4],  // feed_end_date
+                        values[5]   // feed_version
+                    )
                     else -> values
                 }
-                valuesList.add("('${mappedValues.joinToString("','")}')")
-                rowCount++
-                batchCount++
 
-                if (batchCount >= BATCH_SIZE) {
-                    sql.append(valuesList.joinToString(","))
-                    db.execSQL(sql.toString())
+                valuesList.add("(${mappedValues.joinToString(",") { "'$it'" }})")
+                rowCount++
+
+                if (rowCount % BATCH_SIZE == 0) {
+                    db.execSQL("$sql ${valuesList.joinToString(",")}")
                     valuesList.clear()
-                    sql.clear().append("INSERT OR REPLACE INTO $tableName (${columns.joinToString(",")}) VALUES ")
-                    batchCount = 0
+                    batchCount++
+                    Log.d("DataImporter", "Batch $batchCount inserted for table: $tableName")
+                    LoggingActivity.logMessage(context, "Batch $batchCount inserted for table: $tableName")
+                    progressCallback((rowCount.toFloat() / totalRows * 100).toInt())
                 }
             }
 
             if (valuesList.isNotEmpty()) {
-                sql.append(valuesList.joinToString(","))
-                db.execSQL(sql.toString())
+                db.execSQL("$sql ${valuesList.joinToString(",")}")
+                Log.d("DataImporter", "Final batch inserted for table: $tableName")
+                LoggingActivity.logMessage(context, "Final batch inserted for table: $tableName")
+                progressCallback(100)
             }
 
-            reader.close()
-            Log.d("DataImporter", "Imported $rowCount rows into $tableName")
-            LoggingActivity.logMessage(context, "Imported $rowCount rows into $tableName")
+            reader2.close()
             true
         } catch (e: Exception) {
-            Log.e("DataImporter", "Error importing data into $tableName", e)
-            LoggingActivity.logMessage(context, "Error importing data into $tableName: ${e.message}")
+            Log.e("DataImporter", "Error importing data for table: $tableName", e)
+            LoggingActivity.logMessage(context, "Error importing data for table: $tableName. ${e.message}")
             false
         }
     }
 
-    private fun logSpecificStop(stopNumber: Int) {
-        val cursor = db.rawQuery("SELECT * FROM stops WHERE stop_id = ?", arrayOf(stopNumber.toString()))
+    private fun logSpecificStop(stopId: Int) {
+        val cursor = db.rawQuery("SELECT * FROM stops WHERE stop_id = ?", arrayOf(stopId.toString()))
         if (cursor.moveToFirst()) {
-            do {
-                val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
-                val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
-                Log.d("DataImporter", "Stop ID: $stopId, Stop Name: $stopName")
-            } while (cursor.moveToNext())
+            val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
+            Log.d("DataImporter", "Stop ID: $stopId, Stop Name: $stopName")
+            LoggingActivity.logMessage(context, "Stop ID: $stopId, Stop Name: $stopName")
         }
         cursor.close()
     }
 
     private fun logAllStopIds() {
         val cursor = db.rawQuery("SELECT stop_id FROM stops", null)
-        val stopIds = mutableListOf<String>()
-        if (cursor.moveToFirst()) {
-            do {
-                stopIds.add(cursor.getString(cursor.getColumnIndexOrThrow("stop_id")))
-            } while (cursor.moveToNext())
+        while (cursor.moveToNext()) {
+            val stopId = cursor.getInt(cursor.getColumnIndexOrThrow("stop_id"))
+            Log.d("DataImporter", "Stop ID: $stopId")
+            LoggingActivity.logMessage(context, "Stop ID: $stopId")
         }
         cursor.close()
-        Log.d("DataImporter", "All stop IDs: ${stopIds.joinToString(", ")}")
     }
 }
