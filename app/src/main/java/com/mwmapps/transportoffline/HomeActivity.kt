@@ -45,7 +45,7 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         databaseHelper = DatabaseHelper(this)
-        dataQuery = DataQuery(databaseHelper.readableDatabase)
+        dataQuery = DataQuery(databaseHelper.readableDatabase, this)
 
         val settingsIcon: ImageView = findViewById(R.id.settings_icon)
         settingsIcon.setOnClickListener {
@@ -56,8 +56,9 @@ class HomeActivity : AppCompatActivity() {
         searchBar = findViewById(R.id.search_bar)
         recyclerView = findViewById(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = BusScheduleAdapter(mutableListOf(), mutableListOf(), true) { busStop ->
+        adapter = BusScheduleAdapter(this) { busStop ->
             Log.d("HomeActivity", "Bus stop clicked: ${busStop.stopId}")
+            LoggingActivity.logMessage(this, "Bus stop clicked: ${busStop.stopId}")
             displayBusSchedules(busStop)
         }
         recyclerView.adapter = adapter
@@ -76,6 +77,7 @@ class HomeActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString()
                 Log.d("HomeActivity", "Search query: $query")
+                LoggingActivity.logMessage(this@HomeActivity, "Search query: $query")
                 searchBusStops(query)
             }
 
@@ -87,6 +89,7 @@ class HomeActivity : AppCompatActivity() {
             if (actionId == EditorInfo.IME_ACTION_SEARCH || event?.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
                 val query = searchBar.text.toString()
                 Log.d("HomeActivity", "Search query submitted: $query")
+                LoggingActivity.logMessage(this@HomeActivity, "Search query submitted: $query")
                 searchBusStops(query)
                 return@OnEditorActionListener true
             }
@@ -112,6 +115,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun searchBusStops(query: String) {
         Log.d("HomeActivity", "Searching for bus stops with query: $query")
+        LoggingActivity.logMessage(this, "Searching for bus stops with query: $query")
         CoroutineScope(Dispatchers.IO).launch {
             val busStops = dataQuery.searchBusStops(query)
             withContext(Dispatchers.Main) {
@@ -122,14 +126,22 @@ class HomeActivity : AppCompatActivity() {
 
     private fun displayBusSchedules(busStop: BusStop) {
         Log.d("HomeActivity", "Displaying bus schedules for stop: ${busStop.stopId}")
+        LoggingActivity.logMessage(this, "Displaying bus schedules for stop: ${busStop.stopId}")
         lifecycleScope.launch(Dispatchers.IO) {
-            Log.d("HomeActivity", "Calling getBusSchedules for stopId: ${busStop.stopId}")
+            Log.d("HomeActivity", "Calling getBusSchedules for stop_id: ${busStop.stopId}")
+            LoggingActivity.logMessage(this@HomeActivity, "Calling getBusSchedules for stop_id: ${busStop.stopId}")
+
+            // Log the contents of the stop_times table for the given stop_id
+            dataQuery.logStopTimesForStopId(busStop.stopId)
+
             val busSchedules = dataQuery.getBusSchedules(busStop.stopId)
             val filteredSchedules = filterBusSchedules(busSchedules)
             withContext(Dispatchers.Main) {
-                Log.d("HomeActivity", "Received ${filteredSchedules.size} bus schedules for stopId: ${busStop.stopId}")
+                Log.d("HomeActivity", "Received ${filteredSchedules.size} bus schedules for stop_id: ${busStop.stopId}")
+                LoggingActivity.logMessage(this@HomeActivity, "Received ${filteredSchedules.size} bus schedules for stop_id: ${busStop.stopId}")
                 filteredSchedules.forEach { schedule ->
                     Log.d("HomeActivity", "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
+                    LoggingActivity.logMessage(this@HomeActivity, "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
                 }
                 adapter.updateBusSchedules(filteredSchedules)
             }
@@ -137,25 +149,16 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun filterBusSchedules(busSchedules: List<BusSchedule>): List<BusSchedule> {
-        val timeRange = TimeRange.fromDisplayName(timeRangeSpinner.selectedItem.toString())?.hours ?: 1
-        val startTime = Calendar.getInstance().apply {
-            add(Calendar.MINUTE, -15)
-        }.time
-        val endTime = Calendar.getInstance().apply {
-            add(Calendar.HOUR, timeRange)
-            add(Calendar.MINUTE, 15)
-        }.time
-
-        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        return busSchedules.filter { schedule ->
-            val arrivalTime = dateFormat.parse(schedule.arrivalTime)
-            arrivalTime?.let {
-                it.after(startTime) && it.before(endTime)
-            } ?: false
-        }.map { schedule ->
+        // Temporarily disable time filtering
+        val filteredSchedules = busSchedules.map { schedule ->
             schedule.copy(arrivalTime = convertTo12HourFormat(schedule.arrivalTime))
         }
+
+        Log.d("HomeActivity", "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
+        LoggingActivity.logMessage(this, "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
+        return filteredSchedules
     }
+
 
     private fun convertTo12HourFormat(time: String): String {
         val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
@@ -164,4 +167,3 @@ class HomeActivity : AppCompatActivity() {
         return newFormat.format(date)
     }
 }
-

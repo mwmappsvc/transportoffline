@@ -19,6 +19,9 @@ class LoggingActivity : AppCompatActivity() {
         logTextView = findViewById(R.id.log_text_view)
         clearLogButton = findViewById(R.id.clear_log_button)
 
+        // Enable text selection for copying
+        logTextView.setTextIsSelectable(true)
+
         // Load log messages from file
         loadLogMessages()
 
