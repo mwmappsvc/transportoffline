@@ -18,20 +18,20 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         private const val BATCH_SIZE = 1000 // Adjust this value as needed
     }
 
-    fun importData(progressCallback: (Int) -> Unit): Boolean {
+    fun importData(progressUpdater: (Int) -> Unit): Boolean {
         var success = true
         db.beginTransaction()
         runBlocking {
             val jobs = listOf(
-                async { success = success && importTableData("gtfs_data/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/feed_info.txt", "feed_info", listOf("feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/shapes.txt", "shapes", listOf("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), progressCallback) },
-                async { success = success && importTableData("gtfs_data/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), progressCallback) }
+                async { success = success && importTableData("gtfs_data/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/feed_info.txt", "feed_info", listOf("feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/shapes.txt", "shapes", listOf("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), progressUpdater) },
+                async { success = success && importTableData("gtfs_data/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), progressUpdater) }
             )
             jobs.awaitAll()
         }
@@ -51,7 +51,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         return success
     }
 
-    private fun importTableData(fileName: String, tableName: String, columns: List<String>, progressCallback: (Int) -> Unit): Boolean {
+    private fun importTableData(fileName: String, tableName: String, columns: List<String>, progressUpdater: (Int) -> Unit): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
             LoggingActivity.logMessage(context, "Starting import for table: $tableName")
@@ -176,7 +176,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                     batchCount++
                     Log.d("DataImporter", "Batch $batchCount inserted for table: $tableName")
                     LoggingActivity.logMessage(context, "Batch $batchCount inserted for table: $tableName")
-                    progressCallback((rowCount.toFloat() / totalRows * 100).toInt())
+                    progressUpdater((rowCount.toFloat() / totalRows * 100).toInt())
                 }
             }
 
@@ -184,7 +184,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                 db.execSQL("$sql ${valuesList.joinToString(",")}")
                 Log.d("DataImporter", "Final batch inserted for table: $tableName")
                 LoggingActivity.logMessage(context, "Final batch inserted for table: $tableName")
-                progressCallback(100)
+                progressUpdater(100)
             }
 
             reader2.close()

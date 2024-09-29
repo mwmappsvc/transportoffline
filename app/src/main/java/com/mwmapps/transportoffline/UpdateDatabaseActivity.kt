@@ -13,6 +13,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 class UpdateDatabaseActivity : AppCompatActivity() {
@@ -27,6 +29,9 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var busScheduleSearchButton: Button
     private lateinit var startUpdateButton: Button
     private var updateJob: Job? = null
+
+    private var overallProgress = 0
+    private val progressMutex = Mutex()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +96,6 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
     }
 
-
     private fun onExtractComplete(success: Boolean) {
         if (success) {
             currentTaskDescription.text = "Extract Data [Success]"
@@ -138,9 +142,12 @@ class UpdateDatabaseActivity : AppCompatActivity() {
 
     private fun importData() {
         CoroutineScope(Dispatchers.IO).launch {
-            val success = dataImporter.importData { progress ->
+            val success = dataImporter.importData { newProgress ->
                 CoroutineScope(Dispatchers.Main).launch {
-                    updateProgress(progress)
+                    progressMutex.withLock {
+                        overallProgress = newProgress
+                        updateProgress(overallProgress)
+                    }
                 }
             }
             Log.d("UpdateDatabaseActivity", "Import process completed")
@@ -153,13 +160,15 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
     }
 
-
     private suspend fun simulateProgress(start: Int, end: Int, duration: Long) {
         val totalSteps = end - start
         val delayPerStep = duration / totalSteps
         withContext(Dispatchers.Main) {
             for (i in 1..totalSteps) {
-                updateProgress(start + i)
+                progressMutex.withLock {
+                    overallProgress = start + i
+                    updateProgress(overallProgress)
+                }
                 delay(delayPerStep)
             }
         }
