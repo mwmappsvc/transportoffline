@@ -6,6 +6,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -54,7 +55,7 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         return success
     }
 
-    private fun importTableData(fileName: String, tableName: String, columns: List<String>): Boolean {
+    private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
             LoggingActivity.logMessage(context, "Starting import for table: $tableName")
@@ -179,7 +180,9 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                     batchCount++
                     Log.d("DataImporter", "Batch $batchCount inserted for table: $tableName")
                     LoggingActivity.logMessage(context, "Batch $batchCount inserted for table: $tableName")
-                    progressChannel.send((rowCount.toFloat() / totalRows * 100).toInt())
+                    CoroutineScope(Dispatchers.Main).launch {
+                        progressChannel.send((rowCount.toFloat() / totalRows * 100).toInt())
+                    }
                 }
             }
 
@@ -187,7 +190,9 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
                 db.execSQL("$sql ${valuesList.joinToString(",")}")
                 Log.d("DataImporter", "Final batch inserted for table: $tableName")
                 LoggingActivity.logMessage(context, "Final batch inserted for table: $tableName")
-                progressChannel.send(100)
+                CoroutineScope(Dispatchers.Main).launch {
+                    progressChannel.send(100)
+                }
             }
 
             reader2.close()

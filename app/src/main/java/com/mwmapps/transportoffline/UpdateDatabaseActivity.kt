@@ -13,7 +13,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -54,14 +53,20 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             if (startUpdateButton.text == "Start Update") {
                 Log.d("UpdateDatabaseActivity", "Start Update button clicked")
                 LoggingActivity.logMessage(this, "Start Update button clicked")
-                startUpdateProcess()
+                startUpdateProcess { success ->
+                    if (success) {
+                        updateFinalStatus()
+                    } else {
+                        showFailureDialog()
+                    }
+                }
                 startUpdateButton.text = "Please Wait"
                 startUpdateButton.isEnabled = false
             }
         }
     }
 
-    private fun startUpdateProcess() {
+    private fun startUpdateProcess(callback: (Boolean) -> Unit) {
         // Reset final status
         currentTaskDescription.text = "Starting update process..."
         progressBar.visibility = View.VISIBLE
@@ -75,7 +80,10 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         val url = sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip")
         if (url != null) {
             updateJob = CoroutineScope(Dispatchers.Main).launch {
-                LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Starting download from URL: $url")
+                LoggingActivity.logMessage(
+                    this@UpdateDatabaseActivity,
+                    "Starting download from URL: $url"
+                )
                 currentTaskDescription.text = "Downloading GTFS Data..."
                 overallProgress = 25 // Set progress to 25% for download
                 updateProgress(overallProgress)
@@ -96,14 +104,8 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                             updateProgress(overallProgress)
                             val importJob = launch(Dispatchers.IO) {
                                 val importSuccess = dataImporter.importData()
-                                if (importSuccess) {
-                                    currentTaskDescription.text = "Import Data [Success]"
-                                    overallProgress = 100
-                                    updateProgress(overallProgress)
-                                    updateFinalStatus()
-                                } else {
-                                    currentTaskDescription.text = "Import Data [Fail]"
-                                    showFailureDialog()
+                                withContext(Dispatchers.Main) {
+                                    callback(importSuccess)
                                 }
                             }
                             // Collect progress events from DataImporter
@@ -118,15 +120,15 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                             importJob.join()
                         } else {
                             currentTaskDescription.text = "Verify Files [Fail]"
-                            showFailureDialog()
+                            callback(false)
                         }
                     } else {
                         currentTaskDescription.text = "Extract Data [Fail]"
-                        showFailureDialog()
+                        callback(false)
                     }
                 } else {
                     currentTaskDescription.text = "Download GTFS Data [Fail]"
-                    showFailureDialog()
+                    callback(false)
                 }
             }
         }
@@ -139,14 +141,20 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         val files = File(filesDir, "gtfs_data").listFiles()
         return if (files != null && files.isNotEmpty()) {
             files.forEach { file: File ->
-                LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verified file: ${file.name}")
+                LoggingActivity.logMessage(
+                    this@UpdateDatabaseActivity,
+                    "Verified file: ${file.name}"
+                )
             }
             Log.d("UpdateDatabaseActivity", "Verification successful")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification successful")
             true
         } else {
             Log.e("UpdateDatabaseActivity", "Verification failed: No files found")
-            LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification failed: No files found")
+            LoggingActivity.logMessage(
+                this@UpdateDatabaseActivity,
+                "Verification failed: No files found"
+            )
             false
         }
     }
@@ -167,7 +175,9 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 finish() // Close the update database activity
             }
             busScheduleSearchButton.isEnabled = true
-            busScheduleSearchButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.purple_500))
+            busScheduleSearchButton.setBackgroundTintList(ContextCompat.getColorStateList(this,
+                R.color.purple_500
+            ))
             progressBar.visibility = View.GONE
             progressPercentage.visibility = View.GONE
         } else {
@@ -192,5 +202,10 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             finish() // Close the current activity
         }
         builder.show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        updateJob?.cancel()
     }
 }
