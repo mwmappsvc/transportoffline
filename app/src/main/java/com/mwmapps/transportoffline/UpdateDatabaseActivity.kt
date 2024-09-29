@@ -13,7 +13,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -79,51 +78,52 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 currentTaskDescription.text = "Downloading GTFS Data..."
                 overallProgress = 25 // Set progress to 25% for download
                 updateProgress(overallProgress)
-                val downloadSuccess = withContext(Dispatchers.IO) { gtfsDownloader.downloadGtfsData(url) }
-                if (downloadSuccess) {
-                    currentTaskDescription.text = "Download GTFS Data [Success]"
-                    overallProgress = 40 // Set progress to 40% for extraction
-                    updateProgress(overallProgress)
-                    val extractSuccess = withContext(Dispatchers.IO) { gtfsExtractor.extractData() }
-                    if (extractSuccess) {
-                        currentTaskDescription.text = "Extract Data [Success]"
-                        overallProgress = 55 // Set progress to 55% for verification
+
+                gtfsDownloader.downloadGtfsData(url) { downloadSuccess ->
+                    if (downloadSuccess) {
+                        currentTaskDescription.text = "Download GTFS Data [Success]"
+                        overallProgress = 40 // Set progress to 40% for extraction
                         updateProgress(overallProgress)
-                        val verifySuccess = withContext(Dispatchers.IO) { verifyFiles() }
-                        if (verifySuccess) {
-                            currentTaskDescription.text = "Verify Files [Success]"
-                            overallProgress = 70 // Set progress to 70% for import
-                            updateProgress(overallProgress)
-                            val importSuccess = withContext(Dispatchers.IO) { dataImporter.importData() }
-                            if (importSuccess) {
-                                currentTaskDescription.text = "Import Data [Success]"
-                                overallProgress = 100
+
+                        gtfsExtractor.extractData { extractSuccess ->
+                            if (extractSuccess) {
+                                currentTaskDescription.text = "Extract Data [Success]"
+                                overallProgress = 55 // Set progress to 55% for verification
                                 updateProgress(overallProgress)
-                                updateFinalStatus()
-                            } else {
-                                currentTaskDescription.text = "Import Data [Fail]"
-                                showFailureDialog()
-                            }
-                            // Collect progress events from DataImporter
-                            launch {
-                                for (progress in dataImporter.progressChannel) {
-                                    progressMutex.withLock {
-                                        overallProgress = progress
-                                        updateProgress(overallProgress)
+
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    val verifySuccess = verifyFiles()
+                                    withContext(Dispatchers.Main) {
+                                        if (verifySuccess) {
+                                            currentTaskDescription.text = "Verify Files [Success]"
+                                            overallProgress = 70 // Set progress to 70% for import
+                                            updateProgress(overallProgress)
+
+                                            val importSuccess = withContext(Dispatchers.IO) { dataImporter.importData() }
+                                            if (importSuccess) {
+                                                currentTaskDescription.text = "Import Data [Success]"
+                                                overallProgress = 100
+                                                updateProgress(overallProgress)
+                                                updateFinalStatus()
+                                            } else {
+                                                currentTaskDescription.text = "Import Data [Fail]"
+                                                showFailureDialog()
+                                            }
+                                        } else {
+                                            currentTaskDescription.text = "Verify Files [Fail]"
+                                            showFailureDialog()
+                                        }
                                     }
                                 }
+                            } else {
+                                currentTaskDescription.text = "Extract Data [Fail]"
+                                showFailureDialog()
                             }
-                        } else {
-                            currentTaskDescription.text = "Verify Files [Fail]"
-                            showFailureDialog()
                         }
                     } else {
-                        currentTaskDescription.text = "Extract Data [Fail]"
+                        currentTaskDescription.text = "Download GTFS Data [Fail]"
                         showFailureDialog()
                     }
-                } else {
-                    currentTaskDescription.text = "Download GTFS Data [Fail]"
-                    showFailureDialog()
                 }
             }
         }
@@ -196,4 +196,3 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         updateJob?.cancel()
     }
 }
-
