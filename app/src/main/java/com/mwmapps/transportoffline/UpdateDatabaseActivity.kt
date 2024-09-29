@@ -13,7 +13,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -75,104 +74,80 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         // Download GTFS data
         val url = sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip")
         if (url != null) {
-            updateJob = CoroutineScope(Dispatchers.IO).launch {
+            updateJob = CoroutineScope(Dispatchers.Main).launch {
                 LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Starting download from URL: $url")
-                withContext(Dispatchers.Main) {
-                    currentTaskDescription.text = "Downloading GTFS Data..."
-                    launch { simulateProgress(0, 25, 10000) } // Simulate download progress (0-25%, 10 seconds)
-                }
-                gtfsDownloader.downloadGtfsData(url) { success ->
-                    CoroutineScope(Dispatchers.Main).launch {
-                        currentTaskDescription.text = if (success) "Download GTFS Data [Success]" else "Download GTFS Data [Fail]"
-                        if (success) {
-                            launch { simulateProgress(25, 40, 5000) } // Simulate extraction progress (25-40%, 5 seconds)
-                            gtfsExtractor.extractData { extractSuccess ->
-                                onExtractComplete(extractSuccess)
+                currentTaskDescription.text = "Downloading GTFS Data..."
+                overallProgress = 25 // Set progress to 25% for download
+                updateProgress(overallProgress)
+                val downloadSuccess = withContext(Dispatchers.IO) { gtfsDownloader.downloadGtfsData(url) }
+                if (downloadSuccess) {
+                    currentTaskDescription.text = "Download GTFS Data [Success]"
+                    overallProgress = 40 // Set progress to 40% for extraction
+                    updateProgress(overallProgress)
+                    val extractSuccess = withContext(Dispatchers.IO) { gtfsExtractor.extractData() }
+                    if (extractSuccess) {
+                        currentTaskDescription.text = "Extract Data [Success]"
+                        overallProgress = 55 // Set progress to 55% for verification
+                        updateProgress(overallProgress)
+                        val verifySuccess = withContext(Dispatchers.IO) { verifyFiles() }
+                        if (verifySuccess) {
+                            currentTaskDescription.text = "Verify Files [Success]"
+                            overallProgress = 70 // Set progress to 70% for import
+                            updateProgress(overallProgress)
+                            val importJob = launch(Dispatchers.IO) {
+                                val importSuccess = dataImporter.importData()
+                                if (importSuccess) {
+                                    currentTaskDescription.text = "Import Data [Success]"
+                                    overallProgress = 100
+                                    updateProgress(overallProgress)
+                                    updateFinalStatus()
+                                } else {
+                                    currentTaskDescription.text = "Import Data [Fail]"
+                                    showFailureDialog()
+                                }
                             }
+                            // Collect progress events from DataImporter
+                            launch {
+                                for (progress in dataImporter.progressChannel) {
+                                    progressMutex.withLock {
+                                        overallProgress = progress
+                                        updateProgress(overallProgress)
+                                    }
+                                }
+                            }
+                            importJob.join()
                         } else {
+                            currentTaskDescription.text = "Verify Files [Fail]"
                             showFailureDialog()
                         }
+                    } else {
+                        currentTaskDescription.text = "Extract Data [Fail]"
+                        showFailureDialog()
                     }
+                } else {
+                    currentTaskDescription.text = "Download GTFS Data [Fail]"
+                    showFailureDialog()
                 }
             }
         }
     }
 
-    private fun onExtractComplete(success: Boolean) {
-        if (success) {
-            currentTaskDescription.text = "Extract Data [Success]"
-            CoroutineScope(Dispatchers.Main).launch {
-                simulateProgress(40, 55, 5000) // Simulate verification progress (40-55%, 5 seconds)
-            }
-            CoroutineScope(Dispatchers.IO).launch {
-                verifyFiles()
-            }
-        } else {
-            currentTaskDescription.text = "Extract Data [Fail]"
-            showFailureDialog()
-        }
-    }
-
-    private suspend fun verifyFiles() {
+    private suspend fun verifyFiles(): Boolean {
         // Implement file verification logic here
         LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Starting file verification")
         // Example verification logic
         val files = File(filesDir, "gtfs_data").listFiles()
-        if (files != null && files.isNotEmpty()) {
+        return if (files != null && files.isNotEmpty()) {
             files.forEach { file: File ->
                 LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verified file: ${file.name}")
             }
             Log.d("UpdateDatabaseActivity", "Verification successful")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification successful")
-            withContext(Dispatchers.Main) {
-                currentTaskDescription.text = "Verify Files [Success]"
-                launch { simulateProgress(55, 70, 5000) } // Simulate import progress (55-70%, 5 seconds)
-                currentTaskDescription.text = "Importing Data..."
-                CoroutineScope(Dispatchers.IO).launch {
-                    importData()
-                }
-            }
+            true
         } else {
             Log.e("UpdateDatabaseActivity", "Verification failed: No files found")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification failed: No files found")
-            withContext(Dispatchers.Main) {
-                currentTaskDescription.text = "Verify Files [Fail]"
-                showFailureDialog()
-            }
-        }
-    }
-
-    private fun importData() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val success = dataImporter.importData { newProgress ->
-                CoroutineScope(Dispatchers.Main).launch {
-                    progressMutex.withLock {
-                        overallProgress = newProgress
-                        updateProgress(overallProgress)
-                    }
-                }
-            }
-            Log.d("UpdateDatabaseActivity", "Import process completed")
-            LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Import process completed")
-            withContext(Dispatchers.Main) {
-                currentTaskDescription.text = if (success) "Import Data [Success]" else "Import Data [Fail]"
-                updateProgress(100) // Update progress
-                updateFinalStatus()
-            }
-        }
-    }
-
-    private suspend fun simulateProgress(start: Int, end: Int, duration: Long) {
-        val totalSteps = end - start
-        val delayPerStep = duration / (totalSteps * 2) // Smaller delay
-        withContext(Dispatchers.Main) {
-            for (i in 1..totalSteps * 2) {
-                progressMutex.withLock {
-                    overallProgress = start + i / 2 // Smaller increment
-                    updateProgress(overallProgress)
-                }
-                delay(delayPerStep)
-            }
+            false
         }
     }
 
