@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -37,12 +38,18 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         gtfsExtractor = GtfsExtractor(this)
         gtfsCompare = GtfsCompare(this)
 
+        // Initially hide the progress bar, task description, and percentage
+        progressBar.visibility = View.GONE
+        currentTaskDescription.visibility = View.GONE
+        progressPercentage.visibility = View.GONE
+
         startUpdateButton.setOnClickListener {
             if (startUpdateButton.text == "Start Update") {
                 startUpdateProcess()
                 startUpdateButton.text = "Please Wait"
                 startUpdateButton.isEnabled = false
                 progressBar.visibility = View.VISIBLE
+                currentTaskDescription.visibility = View.VISIBLE
                 progressPercentage.visibility = View.VISIBLE
             } else if (startUpdateButton.text == "Bus Schedules") {
                 navigateToHomePage()
@@ -55,6 +62,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             val isUpdateNeeded = gtfsCompare.isUpdateNeeded()
             if (isUpdateNeeded) {
                 overwriteDatabase()
+                observeProgress()
                 val updateSuccess = databaseUpdater.startUpdate()
                 if (updateSuccess) {
                     notifyUserUpdateComplete()
@@ -76,23 +84,51 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         currentTaskDescription.text = "Download failed. Please check the URL and try again."
         startUpdateButton.text = "Retry"
         startUpdateButton.isEnabled = true
+        progressBar.visibility = View.GONE
+        progressPercentage.visibility = View.GONE
     }
 
     private fun notifyUserNoUpdateNeeded() {
         currentTaskDescription.text = "No update needed."
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
+        progressBar.visibility = View.GONE
+        progressPercentage.visibility = View.GONE
     }
 
     private fun notifyUserUpdateComplete() {
         currentTaskDescription.text = "Update complete."
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
+        progressBar.visibility = View.GONE
+        progressPercentage.visibility = View.GONE
     }
 
     private fun navigateToHomePage() {
         val intent = Intent(this, HomeActivity::class.java)
         startActivity(intent)
+    }
+
+    private fun observeProgress() {
+        lifecycleScope.launch {
+            databaseUpdater.updateStage.collect { stage ->
+                when (stage) {
+                    UpdateStage.Downloading -> currentTaskDescription.text = "Downloading GTFS data..."
+                    UpdateStage.Extracting -> currentTaskDescription.text = "Extracting GTFS data..."
+                    UpdateStage.Importing -> currentTaskDescription.text = "Importing GTFS data..."
+                    UpdateStage.Completed -> currentTaskDescription.text = "Update complete."
+                    UpdateStage.Failed -> currentTaskDescription.text = "Update failed."
+                    else -> currentTaskDescription.text = ""
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            databaseUpdater.updateProgress.collect { progress ->
+                progressBar.progress = progress
+                progressPercentage.text = "$progress%"
+            }
+        }
     }
 
     override fun onBackPressed() {
