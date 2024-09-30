@@ -63,11 +63,15 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             if (isUpdateNeeded) {
                 overwriteDatabase()
                 observeProgress()
-                val updateSuccess = databaseUpdater.startUpdate()
-                if (updateSuccess) {
-                    notifyUserUpdateComplete()
-                } else {
-                    notifyUserDownloadFailed()
+                val updateSuccess = withContext(Dispatchers.IO) {
+                    databaseUpdater.startUpdate()
+                }
+                withContext(Dispatchers.Main) {
+                    if (updateSuccess) {
+                        notifyUserUpdateComplete()
+                    } else {
+                        notifyUserDownloadFailed()
+                    }
                 }
             } else {
                 notifyUserNoUpdateNeeded()

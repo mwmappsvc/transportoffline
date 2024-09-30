@@ -23,11 +23,10 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
             try {
                 _updateStage.emit(UpdateStage.Downloading)
                 val downloader = GtfsDownloader(context)
-                val downloadJob = async { downloader.downloadGtfsData() }
+                val downloadSuccess = downloader.downloadGtfsData()
                 downloader.downloadProgress.collect { progress ->
                     _updateProgress.emit(progress)
                 }
-                val downloadSuccess = downloadJob.await()
                 if (!downloadSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
                     success = false
@@ -36,11 +35,10 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                 if (success) {
                     _updateStage.emit(UpdateStage.Extracting)
                     val extractor = GtfsExtractor(context)
-                    val extractionJob = async { extractor.extractData() }
+                    val extractionSuccess = extractor.extractData()
                     extractor.extractionProgress.collect { progress ->
                         _updateProgress.emit(progress)
                     }
-                    val extractionSuccess = extractionJob.await()
                     if (!extractionSuccess) {
                         _updateStage.emit(UpdateStage.Failed)
                         success = false
@@ -51,11 +49,10 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                     _updateStage.emit(UpdateStage.Importing)
                     val db = dbHelper.writableDatabase
                     val importer = DataImporter(context, db)
-                    val importJob = async { importer.importData() }
+                    val importSuccess = importer.importData()
                     importer.importProgress.collect { progress ->
                         _updateProgress.emit(progress)
                     }
-                    val importSuccess = importJob.await()
                     if (!importSuccess) {
                         _updateStage.emit(UpdateStage.Failed)
                         success = false
