@@ -27,7 +27,7 @@ class GtfsDownloader(private val context: Context) {
         }
     }
 
-    private fun performDownload(url: String): Boolean {
+    internal fun performDownload(url: String): Boolean {
         return try {
             val gtfsDataDir = File(context.filesDir, "gtfs_data")
             if (!gtfsDataDir.exists()) {

@@ -26,7 +26,7 @@ class GtfsExtractor(private val context: Context) {
         }
     }
 
-    private fun performExtraction(): Boolean {
+    internal fun performExtraction(): Boolean {
         return try {
             val gtfsDataDir = File(context.filesDir, "gtfs_data")
             val zipFile = File(gtfsDataDir, "google_transit.zip")
