@@ -29,19 +29,19 @@ class DatabaseUpdater(private val context: Context, private val databaseHelper: 
 
         // Extract GTFS data
         _updateStage.value = UpdateStage.Extracting
-        _updateProgress.value = 50
+        _updateProgress.value = 40
         val extractSuccess = withContext(Dispatchers.IO) { GtfsExtractor(context).performExtraction() }
         if (!extractSuccess) return
 
         // Verify files
         _updateStage.value = UpdateStage.Verifying
-        _updateProgress.value = 75
+        _updateProgress.value = 55
         val verifySuccess = withContext(Dispatchers.IO) { verifyFiles() }
         if (!verifySuccess) return
 
         // Import data
         _updateStage.value = UpdateStage.Importing
-        _updateProgress.value = 90
+        _updateProgress.value = 70
         val importSuccess = withContext(Dispatchers.IO) { DataImporter(context, databaseHelper.writableDatabase).importData() }
         if (!importSuccess) return
 

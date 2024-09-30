@@ -1,9 +1,5 @@
 package com.mwmapps.transportoffline
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -11,6 +7,10 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var currentTaskDescription: TextView
@@ -78,4 +78,3 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
     }
 }
-
