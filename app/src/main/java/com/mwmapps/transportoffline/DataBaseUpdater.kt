@@ -19,6 +19,7 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
 
     suspend fun startUpdate(): Boolean {
         return withContext(Dispatchers.IO) {
+            var success = true
             try {
                 _updateStage.emit(UpdateStage.Downloading)
                 val downloader = GtfsDownloader(context)
@@ -29,40 +30,47 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                 val downloadSuccess = downloadJob.await()
                 if (!downloadSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
+                    success = false
                 }
 
-                _updateStage.emit(UpdateStage.Extracting)
-                val extractor = GtfsExtractor(context)
-                val extractionJob = async { extractor.extractData() }
-                extractor.extractionProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
-                val extractionSuccess = extractionJob.await()
-                if (!extractionSuccess) {
-                    _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
-                }
-
-                _updateStage.emit(UpdateStage.Importing)
-                val db = dbHelper.writableDatabase
-                val importer = DataImporter(context, db)
-                val importJob = async { importer.importData() }
-                importer.importProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
-                val importSuccess = importJob.await()
-                if (!importSuccess) {
-                    _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
+                if (success) {
+                    _updateStage.emit(UpdateStage.Extracting)
+                    val extractor = GtfsExtractor(context)
+                    val extractionJob = async { extractor.extractData() }
+                    extractor.extractionProgress.collect { progress ->
+                        _updateProgress.emit(progress)
+                    }
+                    val extractionSuccess = extractionJob.await()
+                    if (!extractionSuccess) {
+                        _updateStage.emit(UpdateStage.Failed)
+                        success = false
+                    }
                 }
 
-                _updateStage.emit(UpdateStage.Completed)
-                return@withContext true
+                if (success) {
+                    _updateStage.emit(UpdateStage.Importing)
+                    val db = dbHelper.writableDatabase
+                    val importer = DataImporter(context, db)
+                    val importJob = async { importer.importData() }
+                    importer.importProgress.collect { progress ->
+                        _updateProgress.emit(progress)
+                    }
+                    val importSuccess = importJob.await()
+                    if (!importSuccess) {
+                        _updateStage.emit(UpdateStage.Failed)
+                        success = false
+                    }
+                }
+
+                if (success) {
+                    _updateStage.emit(UpdateStage.Completed)
+                }
+
             } catch (e: Exception) {
                 _updateStage.emit(UpdateStage.Failed)
-                return@withContext false
+                success = false
             }
+            return@withContext success
         }
     }
 }
