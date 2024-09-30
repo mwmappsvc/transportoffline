@@ -125,10 +125,16 @@ class UpdateDatabaseActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             databaseUpdater.updateProgress.collect { progress ->
-                progressBar.progress = progress
-                progressPercentage.text = "$progress%"
+                withContext(Dispatchers.Main) {
+                    updateProgressBar(progress)
+                }
             }
         }
+    }
+
+    private fun updateProgressBar(progress: Int) {
+        progressBar.progress = progress
+        progressPercentage.text = "$progress%" // Update percentage text
     }
 
     override fun onBackPressed() {
