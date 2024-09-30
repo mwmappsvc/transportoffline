@@ -20,10 +20,11 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
         return withContext(Dispatchers.IO) {
             _updateStage.emit(UpdateStage.Downloading)
             val downloader = GtfsDownloader(context)
+            val downloadSuccess = downloader.downloadGtfsData()
             downloader.downloadProgress.collect { progress ->
                 _updateProgress.emit(progress)
             }
-            if (downloader.downloadGtfsData()) {
+            if (downloadSuccess) {
                 _updateStage.emit(UpdateStage.Extracting)
                 val extractor = GtfsExtractor(context)
                 extractor.extractionProgress.collect { progress ->
