@@ -1,4 +1,3 @@
-//version 4:50pm
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -131,24 +130,26 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     }
 
     private suspend fun verifyFiles(): Boolean {
-        // Implement file verification logic here
         LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Starting file verification")
-        // Example verification logic
+        val filesDirPath = File(filesDir, "gtfs_data").absolutePath
+        Log.d("UpdateDatabaseActivity", "Verifying files in directory: $filesDirPath")
+        LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verifying files in directory: $filesDirPath")
+
         val files = File(filesDir, "gtfs_data").listFiles()
         return if (files != null && files.isNotEmpty()) {
             files.forEach { file: File ->
+                Log.d("UpdateDatabaseActivity", "Verified file: ${file.name}")
                 LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verified file: ${file.name}")
             }
             Log.d("UpdateDatabaseActivity", "Verification successful")
             LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification successful")
             true
         } else {
-            Log.e("UpdateDatabaseActivity", "Verification failed: No files found")
-            LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification failed: No files found")
+            Log.e("UpdateDatabaseActivity", "Verification failed: No files found in directory: $filesDirPath")
+            LoggingActivity.logMessage(this@UpdateDatabaseActivity, "Verification failed: No files found in directory: $filesDirPath")
             false
         }
     }
-
     private fun updateProgress(progress: Int) {
         progressBar.progress = progress
         progressPercentage.text = "$progress%"

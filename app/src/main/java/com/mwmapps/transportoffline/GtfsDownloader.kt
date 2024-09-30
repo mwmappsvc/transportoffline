@@ -1,4 +1,3 @@
-//version 4:50pm
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -7,27 +6,21 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
 
 class GtfsDownloader(private val context: Context) {
 
     fun downloadGtfsData(url: String, callback: (Boolean) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Perform the download operation
                 val downloadSuccess = performDownload(url)
-
                 withContext(Dispatchers.Main) {
-                    if (downloadSuccess) {
-                        Log.d("GtfsDownloader", "Download successful")
-                        callback(true)
-                    } else {
-                        Log.e("GtfsDownloader", "Download failed")
-                        callback(false)
-                    }
+                    callback(downloadSuccess)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Log.e("GtfsDownloader", "Download failed", e)
                     callback(false)
                 }
             }
@@ -35,8 +28,33 @@ class GtfsDownloader(private val context: Context) {
     }
 
     private fun performDownload(url: String): Boolean {
-        // Implement the download logic here
-        // Return true if the download is successful, false otherwise
-        return true
+        return try {
+            val gtfsDataDir = File(context.filesDir, "gtfs_data")
+            if (!gtfsDataDir.exists()) {
+                gtfsDataDir.mkdirs()
+            }
+
+            val outputFile = File(gtfsDataDir, "google_transit.zip")
+            val urlConnection = URL(url).openConnection()
+            urlConnection.connect()
+
+            val inputStream = urlConnection.getInputStream()
+            val outputStream = FileOutputStream(outputFile)
+
+            val buffer = ByteArray(1024)
+            var len: Int
+            while (inputStream.read(buffer).also { len = it } != -1) {
+                outputStream.write(buffer, 0, len)
+            }
+
+            outputStream.close()
+            inputStream.close()
+
+            Log.d("GtfsDownloader", "Download successful, file saved to: ${outputFile.absolutePath}")
+            true
+        } catch (e: Exception) {
+            Log.e("GtfsDownloader", "Download failed", e)
+            false
+        }
     }
 }
