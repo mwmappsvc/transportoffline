@@ -5,6 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.ZipFile
@@ -12,7 +13,7 @@ import java.util.zip.ZipFile
 class GtfsExtractor(private val context: Context) {
 
     private val _extractionProgress = MutableStateFlow(0)
-    val extractionProgress: StateFlow<Int> = _extractionProgress
+    val extractionProgress: StateFlow<Int> = _extractionProgress.asStateFlow()
 
     suspend fun extractData(): Boolean {
         return withContext(Dispatchers.IO) {

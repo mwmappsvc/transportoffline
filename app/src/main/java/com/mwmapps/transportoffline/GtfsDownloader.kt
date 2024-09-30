@@ -5,6 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -13,7 +14,7 @@ import java.net.URL
 class GtfsDownloader(private val context: Context) {
 
     private val _downloadProgress = MutableStateFlow(0)
-    val downloadProgress: StateFlow<Int> = _downloadProgress
+    val downloadProgress: StateFlow<Int> = _downloadProgress.asStateFlow()
 
     suspend fun downloadGtfsData(url: String): Boolean {
         return withContext(Dispatchers.IO) {

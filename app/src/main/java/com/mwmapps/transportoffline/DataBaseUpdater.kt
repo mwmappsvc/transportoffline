@@ -3,6 +3,7 @@ package com.mwmapps.transportoffline
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 
@@ -15,10 +16,10 @@ sealed class UpdateStage {
 
 class DatabaseUpdater(private val context: Context, private val databaseHelper: DatabaseHelper) {
     private val _updateProgress = MutableStateFlow(0)
-    val updateProgress: StateFlow<Int> = _updateProgress
+    val updateProgress: StateFlow<Int> = _updateProgress.asStateFlow()
 
     private val _updateStage = MutableStateFlow<UpdateStage?>(null)
-    val updateStage: StateFlow<UpdateStage?> = _updateStage
+    val updateStage: StateFlow<UpdateStage?> = _updateStage.asStateFlow()
 
     suspend fun startUpdate() {
         val gtfsDownloader = GtfsDownloader(context)

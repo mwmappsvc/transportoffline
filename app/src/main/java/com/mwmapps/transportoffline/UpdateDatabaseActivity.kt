@@ -8,9 +8,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var currentTaskDescription: TextView
@@ -41,6 +42,8 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 startUpdateProcess()
                 startUpdateButton.text = "Please Wait"
                 startUpdateButton.isEnabled = false
+                progressBar.visibility = View.VISIBLE
+                progressPercentage.visibility = View.VISIBLE
             }
         }
     }
@@ -51,27 +54,33 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            gtfsDownloader.downloadProgress.collect { progress ->
-                withContext(Dispatchers.Main) {
-                    updateProgressBar(progress)
+            gtfsDownloader.downloadProgress
+                .debounce(100) // Debounce updates by 100 milliseconds
+                .collect { progress ->
+                    withContext(Dispatchers.Main) {
+                        updateProgressBar(progress)
+                    }
                 }
-            }
         }
 
         lifecycleScope.launch {
-            gtfsExtractor.extractionProgress.collect { progress ->
-                withContext(Dispatchers.Main) {
-                    updateProgressBar(progress)
+            gtfsExtractor.extractionProgress
+                .debounce(100) // Debounce updates by 100 milliseconds
+                .collect { progress ->
+                    withContext(Dispatchers.Main) {
+                        updateProgressBar(progress)
+                    }
                 }
-            }
         }
 
         lifecycleScope.launch {
-            databaseUpdater.updateProgress.collect { progress ->
-                withContext(Dispatchers.Main) {
-                    updateProgressBar(progress)
+            databaseUpdater.updateProgress
+                .debounce(100) // Debounce updates by 100 milliseconds
+                .collect { progress ->
+                    withContext(Dispatchers.Main) {
+                        updateProgressBar(progress)
+                    }
                 }
-            }
         }
 
         lifecycleScope.launch {
