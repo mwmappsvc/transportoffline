@@ -2,11 +2,9 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
 class DatabaseUpdater(private val context: Context, private val dbHelper: DatabaseHelper) {
@@ -19,7 +17,6 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
 
     suspend fun startUpdate(): Boolean {
         return withContext(Dispatchers.IO) {
-            var success = true
             try {
                 _updateStage.emit(UpdateStage.Downloading)
                 val downloader = GtfsDownloader(context)
@@ -29,45 +26,39 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                 }
                 if (!downloadSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
-                    success = false
+                    return@withContext false
                 }
 
-                if (success) {
-                    _updateStage.emit(UpdateStage.Extracting)
-                    val extractor = GtfsExtractor(context)
-                    val extractionSuccess = extractor.extractData()
-                    extractor.extractionProgress.collect { progress ->
-                        _updateProgress.emit(progress)
-                    }
-                    if (!extractionSuccess) {
-                        _updateStage.emit(UpdateStage.Failed)
-                        success = false
-                    }
+                _updateStage.emit(UpdateStage.Extracting)
+                val extractor = GtfsExtractor(context)
+                val extractionSuccess = extractor.extractData()
+                extractor.extractionProgress.collect { progress ->
+                    _updateProgress.emit(progress)
+                }
+                if (!extractionSuccess) {
+                    _updateStage.emit(UpdateStage.Failed)
+                    return@withContext false
                 }
 
-                if (success) {
-                    _updateStage.emit(UpdateStage.Importing)
-                    val db = dbHelper.writableDatabase
-                    val importer = DataImporter(context, db)
-                    val importSuccess = importer.importData()
-                    importer.importProgress.collect { progress ->
-                        _updateProgress.emit(progress)
-                    }
-                    if (!importSuccess) {
-                        _updateStage.emit(UpdateStage.Failed)
-                        success = false
-                    }
+                _updateStage.emit(UpdateStage.Importing)
+                val db = dbHelper.writableDatabase
+                val importer = DataImporter(context, db)
+                val importSuccess = importer.importData()
+                importer.importProgress.collect { progress ->
+                    _updateProgress.emit(progress)
+                }
+                if (!importSuccess) {
+                    _updateStage.emit(UpdateStage.Failed)
+                    return@withContext false
                 }
 
-                if (success) {
-                    _updateStage.emit(UpdateStage.Completed)
-                }
+                _updateStage.emit(UpdateStage.Completed)
+                return@withContext true
 
             } catch (e: Exception) {
                 _updateStage.emit(UpdateStage.Failed)
-                success = false
+                return@withContext false
             }
-            return@withContext success
         }
     }
 }
