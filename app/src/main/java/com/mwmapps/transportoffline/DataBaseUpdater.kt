@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
 class DatabaseUpdater(private val context: Context, private val dbHelper: DatabaseHelper) {
@@ -19,13 +20,22 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
         return withContext(Dispatchers.IO) {
             _updateStage.emit(UpdateStage.Downloading)
             val downloader = GtfsDownloader(context)
+            downloader.downloadProgress.collect { progress ->
+                _updateProgress.emit(progress)
+            }
             if (downloader.downloadGtfsData()) {
                 _updateStage.emit(UpdateStage.Extracting)
                 val extractor = GtfsExtractor(context)
+                extractor.extractionProgress.collect { progress ->
+                    _updateProgress.emit(progress)
+                }
                 if (extractor.extractData()) {
                     _updateStage.emit(UpdateStage.Importing)
                     val db = dbHelper.writableDatabase
                     val importer = DataImporter(context, db)
+                    importer.importProgress.collect { progress ->
+                        _updateProgress.emit(progress)
+                    }
                     if (importer.importData()) {
                         _updateStage.emit(UpdateStage.Completed)
                         return@withContext true
