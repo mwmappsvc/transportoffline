@@ -21,35 +21,35 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                 _updateStage.emit(UpdateStage.Downloading)
                 val downloader = GtfsDownloader(context)
                 val downloadSuccess = downloader.downloadGtfsData()
-                downloader.downloadProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
                 if (!downloadSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
                     return@withContext false
+                }
+                downloader.downloadProgress.collect { progress ->
+                    _updateProgress.emit(progress)
                 }
 
                 _updateStage.emit(UpdateStage.Extracting)
                 val extractor = GtfsExtractor(context)
                 val extractionSuccess = extractor.extractData()
-                extractor.extractionProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
                 if (!extractionSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
                     return@withContext false
+                }
+                extractor.extractionProgress.collect { progress ->
+                    _updateProgress.emit(progress)
                 }
 
                 _updateStage.emit(UpdateStage.Importing)
                 val db = dbHelper.writableDatabase
                 val importer = DataImporter(context, db)
                 val importSuccess = importer.importData()
-                importer.importProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
                 if (!importSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
                     return@withContext false
+                }
+                importer.importProgress.collect { progress ->
+                    _updateProgress.emit(progress)
                 }
 
                 _updateStage.emit(UpdateStage.Completed)
