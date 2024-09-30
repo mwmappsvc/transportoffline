@@ -2,6 +2,7 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,38 +19,47 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
 
     suspend fun startUpdate(): Boolean {
         return withContext(Dispatchers.IO) {
-            _updateStage.emit(UpdateStage.Downloading)
-            val downloader = GtfsDownloader(context)
-            val downloadSuccess = downloader.downloadGtfsData()
-            downloader.downloadProgress.collect { progress ->
-                _updateProgress.emit(progress)
-            }
-            if (downloadSuccess) {
-                _updateStage.emit(UpdateStage.Extracting)
-                val extractor = GtfsExtractor(context)
-                extractor.extractionProgress.collect { progress ->
+            try {
+                _updateStage.emit(UpdateStage.Downloading)
+                val downloader = GtfsDownloader(context)
+                val downloadJob = async { downloader.downloadGtfsData() }
+                downloader.downloadProgress.collect { progress ->
                     _updateProgress.emit(progress)
                 }
-                val extractionSuccess = extractor.extractData()
-                if (extractionSuccess) {
-                    _updateStage.emit(UpdateStage.Importing)
-                    val db = dbHelper.writableDatabase
-                    val importer = DataImporter(context, db)
-                    importer.importProgress.collect { progress ->
-                        _updateProgress.emit(progress)
-                    }
-                    if (importer.importData()) {
-                        _updateStage.emit(UpdateStage.Completed)
-                        return@withContext true
-                    } else {
-                        _updateStage.emit(UpdateStage.Failed)
-                        return@withContext false
-                    }
-                } else {
+                val downloadSuccess = downloadJob.await()
+                if (!downloadSuccess) {
                     _updateStage.emit(UpdateStage.Failed)
                     return@withContext false
                 }
-            } else {
+
+                _updateStage.emit(UpdateStage.Extracting)
+                val extractor = GtfsExtractor(context)
+                val extractionJob = async { extractor.extractData() }
+                extractor.extractionProgress.collect { progress ->
+                    _updateProgress.emit(progress)
+                }
+                val extractionSuccess = extractionJob.await()
+                if (!extractionSuccess) {
+                    _updateStage.emit(UpdateStage.Failed)
+                    return@withContext false
+                }
+
+                _updateStage.emit(UpdateStage.Importing)
+                val db = dbHelper.writableDatabase
+                val importer = DataImporter(context, db)
+                val importJob = async { importer.importData() }
+                importer.importProgress.collect { progress ->
+                    _updateProgress.emit(progress)
+                }
+                val importSuccess = importJob.await()
+                if (!importSuccess) {
+                    _updateStage.emit(UpdateStage.Failed)
+                    return@withContext false
+                }
+
+                _updateStage.emit(UpdateStage.Completed)
+                return@withContext true
+            } catch (e: Exception) {
                 _updateStage.emit(UpdateStage.Failed)
                 return@withContext false
             }
