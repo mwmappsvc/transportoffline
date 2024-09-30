@@ -30,7 +30,8 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
                 extractor.extractionProgress.collect { progress ->
                     _updateProgress.emit(progress)
                 }
-                if (extractor.extractData()) {
+                val extractionSuccess = extractor.extractData()
+                if (extractionSuccess) {
                     _updateStage.emit(UpdateStage.Importing)
                     val db = dbHelper.writableDatabase
                     val importer = DataImporter(context, db)
