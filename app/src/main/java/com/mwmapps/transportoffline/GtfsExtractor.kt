@@ -2,60 +2,57 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.ZipFile
 
 class GtfsExtractor(private val context: Context) {
 
-    fun extractData(callback: (Boolean) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
+    private val _extractionProgress = MutableStateFlow(0)
+    val extractionProgress: StateFlow<Int> = _extractionProgress
+
+    suspend fun extractData(): Boolean {
+        return withContext(Dispatchers.IO) {
             try {
-                val extractSuccess = performExtraction()
-                withContext(Dispatchers.Main) {
-                    callback(extractSuccess)
+                val gtfsDataDir = File(context.filesDir, "gtfs_data")
+                val zipFile = File(gtfsDataDir, "google_transit.zip")
+
+                if (!zipFile.exists()) {
+                    Log.e("GtfsExtractor", "Zip file not found: ${zipFile.absolutePath}")
+                    return@withContext false
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    callback(false)
-                }
-            }
-        }
-    }
 
-    internal fun performExtraction(): Boolean {
-        return try {
-            val gtfsDataDir = File(context.filesDir, "gtfs_data")
-            val zipFile = File(gtfsDataDir, "google_transit.zip")
+                ZipFile(zipFile).use { zip ->
+                    val totalFiles = zip.size()
+                    var filesExtracted = 0
 
-            if (!zipFile.exists()) {
-                Log.e("GtfsExtractor", "Zip file not found: ${zipFile.absolutePath}")
-                return false
-            }
-
-            ZipFile(zipFile).use { zip ->
-                zip.entries().asSequence().forEach { entry ->
-                    val outputFile = File(gtfsDataDir, entry.name)
-                    if (entry.isDirectory) {
-                        outputFile.mkdirs()
-                    } else {
-                        zip.getInputStream(entry).use { input ->
-                            outputFile.outputStream().use { output ->
-                                input.copyTo(output)
+                    zip.entries().asSequence().forEach { entry ->
+                        val outputFile = File(gtfsDataDir, entry.name)
+                        if (entry.isDirectory) {
+                            outputFile.mkdirs()
+                        } else {
+                            zip.getInputStream(entry).use { input ->
+                                outputFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
                             }
                         }
+
+                        filesExtracted++
+                        val progress = (filesExtracted * 100 / totalFiles).toInt()
+                        _extractionProgress.emit(progress)
                     }
                 }
-            }
 
-            Log.d("GtfsExtractor", "Extraction successful, files extracted to: ${gtfsDataDir.absolutePath}")
-            true
-        } catch (e: Exception) {
-            Log.e("GtfsExtractor", "Extraction failed", e)
-            false
+                Log.d("GtfsExtractor", "Extraction successful, files extracted to: ${gtfsDataDir.absolutePath}")
+                true
+            } catch (e: Exception) {
+                Log.e("GtfsExtractor", "Extraction failed", e)
+                false
+            }
         }
     }
 }

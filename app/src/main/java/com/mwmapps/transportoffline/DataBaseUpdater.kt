@@ -21,16 +21,19 @@ class DatabaseUpdater(private val context: Context, private val databaseHelper: 
     val updateStage: StateFlow<UpdateStage?> = _updateStage
 
     suspend fun startUpdate() {
+        val gtfsDownloader = GtfsDownloader(context)
+        val gtfsExtractor = GtfsExtractor(context)
+
         // Download GTFS data
         _updateStage.value = UpdateStage.Downloading
         _updateProgress.value = 25
-        val downloadSuccess = withContext(Dispatchers.IO) { GtfsDownloader(context).performDownload("https://www.rtd-denver.com/files/gtfs/google_transit.zip") }
+        val downloadSuccess = withContext(Dispatchers.IO) { gtfsDownloader.downloadGtfsData("https://www.rtd-denver.com/files/gtfs/google_transit.zip") }
         if (!downloadSuccess) return
 
         // Extract GTFS data
         _updateStage.value = UpdateStage.Extracting
         _updateProgress.value = 40
-        val extractSuccess = withContext(Dispatchers.IO) { GtfsExtractor(context).performExtraction() }
+        val extractSuccess = withContext(Dispatchers.IO) { gtfsExtractor.extractData() }
         if (!extractSuccess) return
 
         // Verify files

@@ -19,6 +19,8 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var startUpdateButton: Button
     private lateinit var busScheduleSearchButton: Button
     private lateinit var databaseUpdater: DatabaseUpdater
+    private lateinit var gtfsDownloader: GtfsDownloader
+    private lateinit var gtfsExtractor: GtfsExtractor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +33,8 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         busScheduleSearchButton = findViewById(R.id.bus_schedule_search_button)
 
         databaseUpdater = DatabaseUpdater(this, DatabaseHelper(this))
+        gtfsDownloader = GtfsDownloader(this)
+        gtfsExtractor = GtfsExtractor(this)
 
         startUpdateButton.setOnClickListener {
             if (startUpdateButton.text == "Start Update") {
@@ -44,6 +48,22 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     private fun startUpdateProcess() {
         lifecycleScope.launch {
             databaseUpdater.startUpdate()
+        }
+
+        lifecycleScope.launch {
+            gtfsDownloader.downloadProgress.collect { progress ->
+                withContext(Dispatchers.Main) {
+                    updateProgressBar(progress)
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            gtfsExtractor.extractionProgress.collect { progress ->
+                withContext(Dispatchers.Main) {
+                    updateProgressBar(progress)
+                }
+            }
         }
 
         lifecycleScope.launch {
