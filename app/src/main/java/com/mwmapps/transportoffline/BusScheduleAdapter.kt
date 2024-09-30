@@ -1,12 +1,12 @@
 package com.mwmapps.transportoffline
 
+import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import android.content.Context
 
 class BusScheduleAdapter(private val context: Context, private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -19,8 +19,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
     }
 
     fun updateBusStops(newBusStops: List<BusStop>) {
-        Log.d("BusScheduleAdapter", "Updating bus stops in adapter")
-        LoggingActivity.logMessage(context, "Updating bus stops in adapter")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Updating bus stops in adapter")
         busStops.clear()
         busStops.addAll(newBusStops)
         isDisplayingBusStops = true
@@ -28,8 +27,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
     }
 
     fun updateBusSchedules(newBusSchedules: List<BusSchedule>) {
-        Log.d("BusScheduleAdapter", "Updating bus schedules in adapter, size: ${newBusSchedules.size}")
-        LoggingActivity.logMessage(context, "Updating bus schedules in adapter, size: ${newBusSchedules.size}")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Updating bus schedules in adapter, size: ${newBusSchedules.size}")
         busSchedules.clear()
         busSchedules.addAll(newBusSchedules)
         isDisplayingBusStops = false
@@ -66,8 +64,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         fun bind(busStop: BusStop) {
             stopNameTextView.text = busStop.stopName
             itemView.setOnClickListener {
-                Log.d("BusScheduleAdapter", "Bus stop clicked: ${busStop.stopId}")
-                LoggingActivity.logMessage(itemView.context, "Bus stop clicked: ${busStop.stopId}")
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
                 onBusStopClick(busStop)
             }
         }
@@ -80,8 +77,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         private val routeNameTextView: TextView = itemView.findViewById(R.id.route_name)
 
         fun bind(busSchedule: BusSchedule) {
-            Log.d("BusScheduleAdapter", "Binding bus schedule: ${busSchedule.stopSequence}, ${busSchedule.arrivalTime}, ${busSchedule.routeId}, ${busSchedule.routeShortName}, ${busSchedule.routeLongName}")
-            LoggingActivity.logMessage(itemView.context, "Binding bus schedule: ${busSchedule.stopSequence}, ${busSchedule.arrivalTime}, ${busSchedule.routeId}, ${busSchedule.routeShortName}, ${busSchedule.routeLongName}")
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Binding bus schedule: ${busSchedule.stopSequence}, ${busSchedule.arrivalTime}, ${busSchedule.routeId}, ${busSchedule.routeShortName}, ${busSchedule.routeLongName}")
             stopSequenceTextView.text = "Stop Sequence: ${busSchedule.stopSequence}"
             arrivalTimeTextView.text = "Arrival Time: ${busSchedule.arrivalTime}"
             routeIdTextView.text = "Route ID: ${busSchedule.routeId}"

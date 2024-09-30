@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -48,6 +49,12 @@
             android:name=".LoggingActivity"
             android:exported="true"
             android:label="@string/logging_activity_label"
+            android:theme="@style/Theme.TransportOffline" />
+
+        <activity
+            android:name=".ConfigureLoggingActivity"
+            android:exported="true"
+            android:label="@string/configure_logging_activity_label"
             android:theme="@style/Theme.TransportOffline" />
     </application>
 </manifest>

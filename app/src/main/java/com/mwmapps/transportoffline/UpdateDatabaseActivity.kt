@@ -1,5 +1,6 @@
 package com.mwmapps.transportoffline
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -8,8 +9,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -22,6 +21,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var databaseUpdater: DatabaseUpdater
     private lateinit var gtfsDownloader: GtfsDownloader
     private lateinit var gtfsExtractor: GtfsExtractor
+    private lateinit var gtfsCompare: GtfsCompare
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,11 +31,11 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progress_bar)
         progressPercentage = findViewById(R.id.progress_percentage)
         startUpdateButton = findViewById(R.id.start_update_button)
-        busScheduleSearchButton = findViewById(R.id.bus_schedule_search_button)
 
         databaseUpdater = DatabaseUpdater(this, DatabaseHelper(this))
         gtfsDownloader = GtfsDownloader(this)
         gtfsExtractor = GtfsExtractor(this)
+        gtfsCompare = GtfsCompare(this)
 
         startUpdateButton.setOnClickListener {
             if (startUpdateButton.text == "Start Update") {
@@ -44,66 +44,64 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 startUpdateButton.isEnabled = false
                 progressBar.visibility = View.VISIBLE
                 progressPercentage.visibility = View.VISIBLE
+            } else if (startUpdateButton.text == "Bus Schedules") {
+                navigateToHomePage()
             }
         }
     }
 
     private fun startUpdateProcess() {
         lifecycleScope.launch {
-            databaseUpdater.startUpdate()
-        }
-
-        lifecycleScope.launch {
-            gtfsDownloader.downloadProgress
-                .debounce(100) // Debounce updates by 100 milliseconds
-                .collect { progress ->
-                    withContext(Dispatchers.Main) {
-                        updateProgressBar(progress)
-                    }
+            val isUpdateNeeded = gtfsCompare.isUpdateNeeded()
+            if (isUpdateNeeded) {
+                overwriteDatabase()
+                val updateSuccess = databaseUpdater.startUpdate()
+                if (updateSuccess) {
+                    notifyUserUpdateComplete()
+                } else {
+                    notifyUserDownloadFailed()
                 }
-        }
-
-        lifecycleScope.launch {
-            gtfsExtractor.extractionProgress
-                .debounce(100) // Debounce updates by 100 milliseconds
-                .collect { progress ->
-                    withContext(Dispatchers.Main) {
-                        updateProgressBar(progress)
-                    }
-                }
-        }
-
-        lifecycleScope.launch {
-            databaseUpdater.updateProgress
-                .debounce(100) // Debounce updates by 100 milliseconds
-                .collect { progress ->
-                    withContext(Dispatchers.Main) {
-                        updateProgressBar(progress)
-                    }
-                }
-        }
-
-        lifecycleScope.launch {
-            databaseUpdater.updateStage.collect { stage ->
-                withContext(Dispatchers.Main) {
-                    updateDescription(stage)
-                }
+            } else {
+                notifyUserNoUpdateNeeded()
             }
         }
     }
 
-    private fun updateProgressBar(progress: Int) {
-        progressBar.progress = progress
-        progressPercentage.text = "$progress%"
+    private fun overwriteDatabase() {
+        val dbHelper = DatabaseHelper(this)
+        dbHelper.copyDatabaseFromAssets()
     }
 
-    private fun updateDescription(stage: UpdateStage?) {
-        currentTaskDescription.text = when (stage) {
-            UpdateStage.Downloading -> "Downloading GTFS Data..."
-            UpdateStage.Extracting -> "Extracting GTFS Data..."
-            UpdateStage.Verifying -> "Verifying Files..."
-            UpdateStage.Importing -> "Importing Data..."
-            else -> ""
+    private fun notifyUserDownloadFailed() {
+        currentTaskDescription.text = "Download failed. Please check the URL and try again."
+        startUpdateButton.text = "Retry"
+        startUpdateButton.isEnabled = true
+    }
+
+    private fun notifyUserNoUpdateNeeded() {
+        currentTaskDescription.text = "No update needed."
+        startUpdateButton.text = "Bus Schedules"
+        startUpdateButton.isEnabled = true
+    }
+
+    private fun notifyUserUpdateComplete() {
+        currentTaskDescription.text = "Update complete."
+        startUpdateButton.text = "Bus Schedules"
+        startUpdateButton.isEnabled = true
+    }
+
+    private fun navigateToHomePage() {
+        val intent = Intent(this, HomeActivity::class.java)
+        startActivity(intent)
+    }
+
+    override fun onBackPressed() {
+        // Handle back press during update
+        if (startUpdateButton.text == "Please Wait") {
+            // Show a message to the user
+            currentTaskDescription.text = "Update in progress. Please wait..."
+        } else {
+            super.onBackPressed()
         }
     }
 }

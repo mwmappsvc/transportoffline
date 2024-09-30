@@ -1,60 +1,54 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 
-sealed class UpdateStage {
-    object Downloading : UpdateStage()
-    object Extracting : UpdateStage()
-    object Verifying : UpdateStage()
-    object Importing : UpdateStage()
-}
+class DatabaseUpdater(private val context: Context, private val dbHelper: DatabaseHelper) {
 
-class DatabaseUpdater(private val context: Context, private val databaseHelper: DatabaseHelper) {
     private val _updateProgress = MutableStateFlow(0)
     val updateProgress: StateFlow<Int> = _updateProgress.asStateFlow()
 
     private val _updateStage = MutableStateFlow<UpdateStage?>(null)
     val updateStage: StateFlow<UpdateStage?> = _updateStage.asStateFlow()
 
-    suspend fun startUpdate() {
-        val gtfsDownloader = GtfsDownloader(context)
-        val gtfsExtractor = GtfsExtractor(context)
-
-        // Download GTFS data
-        _updateStage.value = UpdateStage.Downloading
-        _updateProgress.value = 25
-        val downloadSuccess = withContext(Dispatchers.IO) { gtfsDownloader.downloadGtfsData("https://www.rtd-denver.com/files/gtfs/google_transit.zip") }
-        if (!downloadSuccess) return
-
-        // Extract GTFS data
-        _updateStage.value = UpdateStage.Extracting
-        _updateProgress.value = 40
-        val extractSuccess = withContext(Dispatchers.IO) { gtfsExtractor.extractData() }
-        if (!extractSuccess) return
-
-        // Verify files
-        _updateStage.value = UpdateStage.Verifying
-        _updateProgress.value = 55
-        val verifySuccess = withContext(Dispatchers.IO) { verifyFiles() }
-        if (!verifySuccess) return
-
-        // Import data
-        _updateStage.value = UpdateStage.Importing
-        _updateProgress.value = 70
-        val importSuccess = withContext(Dispatchers.IO) { DataImporter(context, databaseHelper.writableDatabase).importData() }
-        if (!importSuccess) return
-
-        // Update final progress
-        _updateProgress.value = 100
+    suspend fun startUpdate(): Boolean {
+        return withContext(Dispatchers.IO) {
+            _updateStage.emit(UpdateStage.Downloading)
+            val downloader = GtfsDownloader(context)
+            if (downloader.downloadGtfsData()) {
+                _updateStage.emit(UpdateStage.Extracting)
+                val extractor = GtfsExtractor(context)
+                if (extractor.extractData()) {
+                    _updateStage.emit(UpdateStage.Importing)
+                    val db = dbHelper.writableDatabase
+                    val importer = DataImporter(context, db)
+                    if (importer.importData()) {
+                        _updateStage.emit(UpdateStage.Completed)
+                        return@withContext true
+                    } else {
+                        _updateStage.emit(UpdateStage.Failed)
+                        return@withContext false
+                    }
+                } else {
+                    _updateStage.emit(UpdateStage.Failed)
+                    return@withContext false
+                }
+            } else {
+                _updateStage.emit(UpdateStage.Failed)
+                return@withContext false
+            }
+        }
     }
+}
 
-    private suspend fun verifyFiles(): Boolean {
-        // Verification logic here
-        return true
-    }
+enum class UpdateStage {
+    Downloading,
+    Extracting,
+    Importing,
+    Completed,
+    Failed
 }

@@ -12,9 +12,20 @@
         android:text="Update Database" />
 
     <Button
+        android:id="@+id/configure_url_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Configure URL" />
+
+    <Button
         android:id="@+id/logging_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Logging" />
 
+    <Button
+        android:id="@+id/button_configure_logging"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Configure Logging" />
 </LinearLayout>

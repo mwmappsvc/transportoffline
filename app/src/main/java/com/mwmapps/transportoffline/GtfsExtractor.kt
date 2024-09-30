@@ -1,7 +1,6 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +21,7 @@ class GtfsExtractor(private val context: Context) {
                 val zipFile = File(gtfsDataDir, "google_transit.zip")
 
                 if (!zipFile.exists()) {
-                    Log.e("GtfsExtractor", "Zip file not found: ${zipFile.absolutePath}")
+                    LoggingControl.log(LoggingControl.LoggingGroup.EXTRACTOR_SIMPLE, "Zip file not found: ${zipFile.absolutePath}")
                     return@withContext false
                 }
 
@@ -44,16 +43,31 @@ class GtfsExtractor(private val context: Context) {
 
                         filesExtracted++
                         val progress = (filesExtracted * 100 / totalFiles).toInt()
-                        _extractionProgress.emit(progress)
+                        withContext(Dispatchers.Main) {
+                            _extractionProgress.emit(progress)
+                        }
                     }
                 }
 
-                Log.d("GtfsExtractor", "Extraction successful, files extracted to: ${gtfsDataDir.absolutePath}")
-                true
+                LoggingControl.log(LoggingControl.LoggingGroup.EXTRACTOR_SIMPLE, "Extraction successful, files extracted to: ${gtfsDataDir.absolutePath}")
+                return@withContext verifyData(gtfsDataDir)
             } catch (e: Exception) {
-                Log.e("GtfsExtractor", "Extraction failed", e)
-                false
+                LoggingControl.log(LoggingControl.LoggingGroup.EXTRACTOR_SIMPLE, "Extraction failed. ${e.message}")
+                return@withContext false
             }
         }
+    }
+
+    private fun verifyData(gtfsDataDir: File): Boolean {
+        val requiredFiles = listOf("agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt")
+        for (fileName in requiredFiles) {
+            val file = File(gtfsDataDir, fileName)
+            if (!file.exists()) {
+                LoggingControl.log(LoggingControl.LoggingGroup.EXTRACTOR_SIMPLE, "Verification failed: Missing file $fileName")
+                return false
+            }
+        }
+        LoggingControl.log(LoggingControl.LoggingGroup.EXTRACTOR_SIMPLE, "Verification successful")
+        return true
     }
 }

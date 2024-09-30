@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- activity_configure_logging.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Configure Logging"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <ToggleButton
+        android:id="@+id/toggle_import_simple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="ImportLogSimple OFF"
+        android:textOn="ImportLogSimple ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_import_verbose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="ImportLogVerbose OFF"
+        android:textOn="ImportLogVerbose ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_download_simple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="DownloadLogSimple OFF"
+        android:textOn="DownloadLogSimple ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_extractor_simple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="ExtractorLogSimple OFF"
+        android:textOn="ExtractorLogSimple ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_compare_simple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="CompareLogSimple OFF"
+        android:textOn="CompareLogSimple ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_query_simple"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="QueryLogSimple OFF"
+        android:textOn="QueryLogSimple ON" />
+
+    <ToggleButton
+        android:id="@+id/toggle_query_verbose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOff="QueryLogVerbose OFF"
+        android:textOn="QueryLogVerbose ON" />
+</LinearLayout>

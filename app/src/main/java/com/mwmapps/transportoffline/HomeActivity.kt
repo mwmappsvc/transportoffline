@@ -8,7 +8,6 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.widget.*
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,7 +24,6 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var searchBar: EditText
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: BusScheduleAdapter
-    private lateinit var databaseHelper: DatabaseHelper
     private lateinit var dataQuery: DataQuery
     private lateinit var timeRangeSpinner: Spinner
 
@@ -44,8 +42,9 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        databaseHelper = DatabaseHelper(this)
-        dataQuery = DataQuery(databaseHelper.readableDatabase, this)
+        // Use the utility function to get the database with retry logic
+        val db = DatabaseUtils.getDatabaseWithRetry(this)
+        dataQuery = DataQuery(db, this)
 
         // Log data from stop_times and trips tables
         dataQuery.logStopTimes()
@@ -61,8 +60,7 @@ class HomeActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = BusScheduleAdapter(this) { busStop ->
-            Log.d("HomeActivity", "Bus stop clicked: ${busStop.stopId}")
-            LoggingActivity.logMessage(this, "Bus stop clicked: ${busStop.stopId}")
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
             displayBusSchedules(busStop)
         }
         recyclerView.adapter = adapter
@@ -80,8 +78,7 @@ class HomeActivity : AppCompatActivity() {
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString()
-                Log.d("HomeActivity", "Search query: $query")
-                LoggingActivity.logMessage(this@HomeActivity, "Search query: $query")
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query: $query")
                 searchBusStops(query)
             }
 
@@ -92,34 +89,16 @@ class HomeActivity : AppCompatActivity() {
         searchBar.setOnEditorActionListener(TextView.OnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH || event?.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
                 val query = searchBar.text.toString()
-                Log.d("HomeActivity", "Search query submitted: $query")
-                LoggingActivity.logMessage(this@HomeActivity, "Search query submitted: $query")
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query submitted: $query")
                 searchBusStops(query)
                 return@OnEditorActionListener true
             }
             false
         })
-
-        // Show welcome popup if it's the first launch
-        val sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        val isFirstLaunch = sharedPreferences.getBoolean("isFirstLaunch", true)
-        if (isFirstLaunch) {
-            showWelcomePopup()
-            sharedPreferences.edit().putBoolean("isFirstLaunch", false).apply()
-        }
-    }
-
-    private fun showWelcomePopup() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Welcome to Transport Offline!")
-        builder.setMessage("Because this is your first time, please open Settings and select 'Update Database'")
-        builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-        builder.show()
     }
 
     private fun searchBusStops(query: String) {
-        Log.d("HomeActivity", "Searching for bus stops with query: $query")
-        LoggingActivity.logMessage(this, "Searching for bus stops with query: $query")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
         CoroutineScope(Dispatchers.IO).launch {
             val busStops = dataQuery.searchBusStops(query)
             withContext(Dispatchers.Main) {
@@ -129,11 +108,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun displayBusSchedules(busStop: BusStop) {
-        Log.d("HomeActivity", "Displaying bus schedules for stop: ${busStop.stopId}")
-        LoggingActivity.logMessage(this, "Displaying bus schedules for stop: ${busStop.stopId}")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Displaying bus schedules for stop: ${busStop.stopId}")
         lifecycleScope.launch(Dispatchers.IO) {
-            Log.d("HomeActivity", "Calling getBusSchedules for stop_id: ${busStop.stopId}")
-            LoggingActivity.logMessage(this@HomeActivity, "Calling getBusSchedules for stop_id: ${busStop.stopId}")
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Calling getBusSchedules for stop_id: ${busStop.stopId}")
 
             // Log the contents of the stop_times table for the given stop_id
             dataQuery.logStopTimesForStopId(busStop.stopId)
@@ -141,11 +118,9 @@ class HomeActivity : AppCompatActivity() {
             val busSchedules = dataQuery.getBusSchedules(busStop.stopId)
             val filteredSchedules = filterBusSchedules(busSchedules)
             withContext(Dispatchers.Main) {
-                Log.d("HomeActivity", "Received ${filteredSchedules.size} bus schedules for stop_id: ${busStop.stopId}")
-                LoggingActivity.logMessage(this@HomeActivity, "Received ${filteredSchedules.size} bus schedules for stop_id: ${busStop.stopId}")
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Received ${filteredSchedules.size} bus schedules for stop_id: ${busStop.stopId}")
                 filteredSchedules.forEach { schedule ->
-                    Log.d("HomeActivity", "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
-                    LoggingActivity.logMessage(this@HomeActivity, "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Bus schedule: ${schedule.stopSequence}, ${schedule.arrivalTime}, ${schedule.routeId}, ${schedule.routeShortName}, ${schedule.routeLongName}")
                 }
                 adapter.updateBusSchedules(filteredSchedules)
             }
@@ -158,8 +133,7 @@ class HomeActivity : AppCompatActivity() {
             schedule.copy(arrivalTime = convertTo12HourFormat(schedule.arrivalTime))
         }
 
-        Log.d("HomeActivity", "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
-        LoggingActivity.logMessage(this, "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Filtered bus schedules (time filter disabled): ${filteredSchedules.size}")
         return filteredSchedules
     }
 

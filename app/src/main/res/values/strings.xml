@@ -5,7 +5,7 @@
     <string name="logging_activity_label">Logging</string>
     <string name="settings_icon_desc">Settings Icon</string>
     <string name="search_icon_desc">Search</string>
-
+    <string name="configure_logging_activity_label">Configure Logging</string>
     <string-array name="time_ranges">
         <item>Next Hour</item>
         <item>Next 2 Hours</item>
