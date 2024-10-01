@@ -1,18 +1,15 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
-import androidx.health.services.client.flush
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
+import java.io.BufferedInputStream
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.net.URL
-import kotlin.concurrent.read
+import android.util.Log
 
 class GtfsDownloader {
 
@@ -27,7 +24,12 @@ class GtfsDownloader {
 
                 val fileLength = connection.contentLength
                 val inputStream = BufferedInputStream(connection.getInputStream())
-                val outputStream = FileOutputStream(Utils.getGtfsZipFile(Utils.getAppContext()))
+                val gtfsDataDir = File(context.filesDir, "gtfs_data")
+                if (!gtfsDataDir.exists()) {
+                    gtfsDataDir.mkdirs()
+                }
+                val outputFile = File(gtfsDataDir, "google_transit.zip")
+                val outputStream = FileOutputStream(outputFile)
                 val buffer = ByteArray(1024)
                 var totalBytesRead = 0
 

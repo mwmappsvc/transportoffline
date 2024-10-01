@@ -17,17 +17,17 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
     private val _updateStage = MutableStateFlow<UpdateStage?>(null)
     val updateStage: StateFlow<UpdateStage?> = _updateStage.asStateFlow()
 
-    suspend fun startUpdate() = coroutineScope {
+    suspend fun startUpdate(url: String): Boolean = coroutineScope {
         try {
             _updateStage.emit(UpdateStage.Downloading)
-            val downloader = GtfsDownloader(context)
-            val downloadResult = async { downloader.downloadGtfsData() }
+            val downloader = GtfsDownloader()
+            val downloadResult = async { downloader.downloadGtfsData(url) }
             downloader.downloadProgress.collect { progress ->
                 _updateProgress.emit(progress)
             }
             if (!downloadResult.await()) {
                 _updateStage.emit(UpdateStage.Failed)
-                return@coroutineScope
+                return@coroutineScope false
             }
             _updateProgress.emit(25)
             _updateStage.emit(UpdateStage.Downloading)
@@ -40,7 +40,7 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
             }
             if (!extractionResult.await()) {
                 _updateStage.emit(UpdateStage.Failed)
-                return@coroutineScope
+                return@coroutineScope false
             }
             _updateProgress.emit(50)
             _updateStage.emit(UpdateStage.Extracting)
@@ -54,16 +54,18 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
             }
             if (!importResult.await()) {
                 _updateStage.emit(UpdateStage.Failed)
-                return@coroutineScope
+                return@coroutineScope false
             }
             _updateProgress.emit(75)
             _updateStage.emit(UpdateStage.Importing)
 
             _updateStage.emit(UpdateStage.Completed)
             _updateProgress.emit(100)
+            return@coroutineScope true
 
         } catch (e: Exception) {
             _updateStage.emit(UpdateStage.Failed)
+            return@coroutineScope false
         }
     }
 }

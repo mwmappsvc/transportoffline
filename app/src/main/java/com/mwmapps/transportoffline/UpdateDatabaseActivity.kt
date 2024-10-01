@@ -34,7 +34,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         startUpdateButton = findViewById(R.id.start_update_button)
 
         databaseUpdater = DatabaseUpdater(this, DatabaseHelper(this))
-        gtfsDownloader = GtfsDownloader(this)
+        gtfsDownloader = GtfsDownloader()
         gtfsExtractor = GtfsExtractor(this)
         gtfsCompare = GtfsCompare(this)
 
@@ -64,7 +64,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 overwriteDatabase()
                 observeProgress()
                 val updateSuccess = withContext(Dispatchers.IO) {
-                    databaseUpdater.startUpdate()
+                    databaseUpdater.startUpdate("https://www.rtd-denver.com/files/gtfs/google_transit.zip")
                 }
                 withContext(Dispatchers.Main) {
                     if (updateSuccess) {
