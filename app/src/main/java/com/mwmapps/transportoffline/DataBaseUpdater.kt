@@ -2,6 +2,8 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,50 +17,53 @@ class DatabaseUpdater(private val context: Context, private val dbHelper: Databa
     private val _updateStage = MutableStateFlow<UpdateStage?>(null)
     val updateStage: StateFlow<UpdateStage?> = _updateStage.asStateFlow()
 
-    suspend fun startUpdate(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                _updateStage.emit(UpdateStage.Downloading)
-                val downloader = GtfsDownloader(context)
-                val downloadSuccess = downloader.downloadGtfsData()
-                if (!downloadSuccess) {
-                    _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
-                }
-                downloader.downloadProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
-
-                _updateStage.emit(UpdateStage.Extracting)
-                val extractor = GtfsExtractor(context)
-                val extractionSuccess = extractor.extractData()
-                if (!extractionSuccess) {
-                    _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
-                }
-                extractor.extractionProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
-
-                _updateStage.emit(UpdateStage.Importing)
-                val db = dbHelper.writableDatabase
-                val importer = DataImporter(context, db)
-                val importSuccess = importer.importData()
-                if (!importSuccess) {
-                    _updateStage.emit(UpdateStage.Failed)
-                    return@withContext false
-                }
-                importer.importProgress.collect { progress ->
-                    _updateProgress.emit(progress)
-                }
-
-                _updateStage.emit(UpdateStage.Completed)
-                return@withContext true
-
-            } catch (e: Exception) {
-                _updateStage.emit(UpdateStage.Failed)
-                return@withContext false
+    suspend fun startUpdate() = coroutineScope {
+        try {
+            _updateStage.emit(UpdateStage.Downloading)
+            val downloader = GtfsDownloader(context)
+            val downloadResult = async { downloader.downloadGtfsData() }
+            downloader.downloadProgress.collect { progress ->
+                _updateProgress.emit(progress)
             }
+            if (!downloadResult.await()) {
+                _updateStage.emit(UpdateStage.Failed)
+                return@coroutineScope
+            }
+            _updateProgress.emit(25)
+            _updateStage.emit(UpdateStage.Downloading)
+
+            _updateStage.emit(UpdateStage.Extracting)
+            val extractor = GtfsExtractor(context)
+            val extractionResult = async { extractor.extractData() }
+            extractor.extractionProgress.collect { progress ->
+                _updateProgress.emit(progress)
+            }
+            if (!extractionResult.await()) {
+                _updateStage.emit(UpdateStage.Failed)
+                return@coroutineScope
+            }
+            _updateProgress.emit(50)
+            _updateStage.emit(UpdateStage.Extracting)
+
+            _updateStage.emit(UpdateStage.Importing)
+            val db = dbHelper.writableDatabase
+            val importer = DataImporter(context, db)
+            val importResult = async { importer.importData() }
+            importer.importProgress.collect { progress ->
+                _updateProgress.emit(progress)
+            }
+            if (!importResult.await()) {
+                _updateStage.emit(UpdateStage.Failed)
+                return@coroutineScope
+            }
+            _updateProgress.emit(75)
+            _updateStage.emit(UpdateStage.Importing)
+
+            _updateStage.emit(UpdateStage.Completed)
+            _updateProgress.emit(100)
+
+        } catch (e: Exception) {
+            _updateStage.emit(UpdateStage.Failed)
         }
     }
 }
