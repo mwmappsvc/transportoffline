@@ -11,7 +11,7 @@ import java.io.FileOutputStream
 import java.net.URL
 import android.util.Log
 
-class GtfsDownloader {
+class GtfsDownloader(private val context: Context) {
 
     private val _downloadProgress = MutableSharedFlow<Int>()
     val downloadProgress = _downloadProgress.asSharedFlow()
@@ -24,24 +24,20 @@ class GtfsDownloader {
 
                 val fileLength = connection.contentLength
                 val inputStream = BufferedInputStream(connection.getInputStream())
-                val gtfsDataDir = File(context.filesDir, "gtfs_data")
-                if (!gtfsDataDir.exists()) {
-                    gtfsDataDir.mkdirs()
-                }
-                val outputFile = File(gtfsDataDir, "google_transit.zip")
+                val outputFile = File(context.filesDir, "gtfs.zip") // Use context.filesDir
                 val outputStream = FileOutputStream(outputFile)
-                val buffer = ByteArray(1024)
-                var totalBytesRead = 0
+                val data = ByteArray(1024)
+                var total: Long = 0
 
                 while (true) {
-                    val bytesRead = inputStream.read(buffer)
-                    if (bytesRead == -1) break
+                    val count = inputStream.read(data)
+                    if (count == -1) break
 
-                    totalBytesRead += bytesRead
-                    val progress = (totalBytesRead * 100 / fileLength).toInt()
-                    _downloadProgress.emit(progress) // Emit progress update
+                    total += count.toLong()
+                    val progress = (total * 100 / fileLength).toInt()
+                    _downloadProgress.emit(progress)
 
-                    outputStream.write(buffer, 0, bytesRead)
+                    outputStream.write(data, 0, count)
                 }
 
                 outputStream.flush()
@@ -49,10 +45,10 @@ class GtfsDownloader {
                 inputStream.close()
 
                 Log.d("GtfsDownloader", "Download completed successfully")
-                true // Return true if download was successful
+                true
             } catch (e: Exception) {
                 Log.e("GtfsDownloader", "Download failed: ${e.message}")
-                false // Return false if download failed
+                false
             }
         }
     }
