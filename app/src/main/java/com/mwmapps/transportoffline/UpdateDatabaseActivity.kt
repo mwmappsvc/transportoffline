@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -18,10 +19,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var progressPercentage: TextView
     private lateinit var startUpdateButton: Button
-    private lateinit var busScheduleSearchButton: Button
     private lateinit var databaseUpdater: DatabaseUpdater
-    private lateinit var gtfsDownloader: GtfsDownloader
-    private lateinit var gtfsExtractor: GtfsExtractor
     private lateinit var gtfsCompare: GtfsCompare
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,9 +31,9 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         progressPercentage = findViewById(R.id.progress_percentage)
         startUpdateButton = findViewById(R.id.start_update_button)
 
-        databaseUpdater = DatabaseUpdater(this, DatabaseHelper(this))
-        gtfsDownloader = GtfsDownloader()
-        gtfsExtractor = GtfsExtractor(this)
+        // Initialize DatabaseUpdater and GtfsCompare with context, DatabaseHelper, and lifecycleScope
+        val dbHelper = DatabaseHelper(this)
+        databaseUpdater = DatabaseUpdater(this, dbHelper, lifecycleScope)
         gtfsCompare = GtfsCompare(this)
 
         // Initially hide the progress bar, task description, and percentage
@@ -55,11 +53,24 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 navigateToHomePage()
             }
         }
+
+        // Handle back press during update
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (startUpdateButton.text == "Please Wait") {
+                    // Show a message to the user
+                    currentTaskDescription.text = "Update in progress. Please wait..."
+                } else {
+                    isEnabled = false
+                    onBackPressed()
+                }
+            }
+        })
     }
 
     private fun startUpdateProcess() {
         lifecycleScope.launch {
-            val isUpdateNeeded = gtfsCompare.isUpdateNeeded()
+            val isUpdateNeeded = withContext(Dispatchers.IO) { gtfsCompare.isUpdateNeeded() }
             if (isUpdateNeeded) {
                 overwriteDatabase()
                 observeProgress()
@@ -119,10 +130,14 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 when (stage) {
                     UpdateStage.Downloading -> currentTaskDescription.text = "Downloading GTFS data..."
                     UpdateStage.Extracting -> currentTaskDescription.text = "Extracting GTFS data..."
+                    UpdateStage.Comparing -> currentTaskDescription.text = "Comparing GTFS data..."
                     UpdateStage.Importing -> currentTaskDescription.text = "Importing GTFS data..."
                     UpdateStage.Completed -> currentTaskDescription.text = "Update complete."
-                    UpdateStage.Failed -> currentTaskDescription.text = "Update failed."
-                    else -> currentTaskDescription.text = ""
+                    UpdateStage.DownloadError -> currentTaskDescription.text = "Download failed."
+                    UpdateStage.ExtractionError -> currentTaskDescription.text = "Extraction failed."
+                    UpdateStage.ComparisonError -> currentTaskDescription.text = "Comparison failed."
+                    UpdateStage.ImportError -> currentTaskDescription.text = "Import failed."
+                    UpdateStage.Error -> currentTaskDescription.text = "Update failed."
                 }
             }
         }
