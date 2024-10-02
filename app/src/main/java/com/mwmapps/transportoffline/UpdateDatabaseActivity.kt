@@ -13,12 +13,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.util.Log
 
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var currentTaskDescription: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressPercentage: TextView
     private lateinit var startUpdateButton: Button
+    private lateinit var retryButton: Button
+    private lateinit var returnToSettingsButton: Button
+    private lateinit var forceUpdateButton: Button
     private lateinit var databaseUpdater: DatabaseUpdater
     private lateinit var gtfsCompare: GtfsCompare
 
@@ -30,16 +34,22 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progress_bar)
         progressPercentage = findViewById(R.id.progress_percentage)
         startUpdateButton = findViewById(R.id.start_update_button)
+        retryButton = findViewById(R.id.retry_button)
+        returnToSettingsButton = findViewById(R.id.return_to_settings_button)
+        forceUpdateButton = findViewById(R.id.force_update_button)
 
         // Initialize DatabaseUpdater and GtfsCompare with context, DatabaseHelper, and lifecycleScope
         val dbHelper = DatabaseHelper(this)
         databaseUpdater = DatabaseUpdater(this, dbHelper, lifecycleScope)
         gtfsCompare = GtfsCompare(this)
 
-        // Initially hide the progress bar, task description, and percentage
+        // Initially hide the progress bar, task description, percentage, and additional buttons
         progressBar.visibility = View.GONE
         currentTaskDescription.visibility = View.GONE
         progressPercentage.visibility = View.GONE
+        retryButton.visibility = View.GONE
+        returnToSettingsButton.visibility = View.GONE
+        forceUpdateButton.visibility = View.GONE
 
         startUpdateButton.setOnClickListener {
             if (startUpdateButton.text == "Start Update") {
@@ -48,10 +58,22 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 startUpdateButton.isEnabled = false
                 progressBar.visibility = View.VISIBLE
                 currentTaskDescription.visibility = View.VISIBLE
-                progressPercentage.visibility = View.VISIBLE
+                // progressPercentage.visibility = View.VISIBLE
             } else if (startUpdateButton.text == "Bus Schedules") {
                 navigateToHomePage()
             }
+        }
+
+        retryButton.setOnClickListener {
+            startUpdateProcess()
+        }
+
+        returnToSettingsButton.setOnClickListener {
+            navigateToSettingsPage()
+        }
+
+        forceUpdateButton.setOnClickListener {
+            forceUpdateProcess()
         }
 
         // Handle back press during update
@@ -70,37 +92,65 @@ class UpdateDatabaseActivity : AppCompatActivity() {
 
     private fun startUpdateProcess() {
         lifecycleScope.launch {
-            val isUpdateNeeded = withContext(Dispatchers.IO) { gtfsCompare.isUpdateNeeded() }
-            if (isUpdateNeeded) {
-                overwriteDatabase()
-                observeProgress()
-                val updateSuccess = withContext(Dispatchers.IO) {
-                    databaseUpdater.startUpdate("https://www.rtd-denver.com/files/gtfs/google_transit.zip")
-                }
-                withContext(Dispatchers.Main) {
-                    if (updateSuccess) {
-                        notifyUserUpdateComplete()
-                    } else {
-                        notifyUserDownloadFailed()
+            observeProgress()
+            val updateSuccess = withContext(Dispatchers.IO) {
+                databaseUpdater.startUpdate("https://www.rtd-denver.com/files/gtfs/google_transit.zip")
+            }
+            withContext(Dispatchers.Main) {
+                Log.d("UpdateDatabaseActivity", "Update process completed with result: $updateSuccess")
+                // Check the update stage to determine the correct UI update
+                databaseUpdater.updateStage.collect { stage ->
+                    when (stage) {
+                        UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
+                        UpdateStage.Completed -> notifyUserUpdateComplete()
+                        else -> {
+                            if (updateSuccess) {
+                                notifyUserUpdateComplete()
+                            } else {
+                                notifyUserDownloadFailed()
+                            }
+                        }
                     }
                 }
-            } else {
-                notifyUserNoUpdateNeeded()
             }
         }
     }
 
-    private fun overwriteDatabase() {
-        val dbHelper = DatabaseHelper(this)
-        dbHelper.copyDatabaseFromAssets()
+    private fun forceUpdateProcess() {
+        lifecycleScope.launch {
+            observeProgress()
+            val updateSuccess = withContext(Dispatchers.IO) {
+                databaseUpdater.forceUpdate("https://www.rtd-denver.com/files/gtfs/google_transit.zip")
+            }
+            withContext(Dispatchers.Main) {
+                Log.d("UpdateDatabaseActivity", "Force update process completed with result: $updateSuccess")
+                // Check the update stage to determine the correct UI update
+                databaseUpdater.updateStage.collect { stage ->
+                    when (stage) {
+                        UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
+                        UpdateStage.Completed -> notifyUserUpdateComplete()
+                        else -> {
+                            if (updateSuccess) {
+                                notifyUserUpdateComplete()
+                            } else {
+                                notifyUserDownloadFailed()
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private fun notifyUserDownloadFailed() {
-        currentTaskDescription.text = "Download failed. Please check the URL and try again."
+        currentTaskDescription.text = "Update failed. Please check the logs for more details."
         startUpdateButton.text = "Retry"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        progressPercentage.visibility = View.GONE
+        // progressPercentage.visibility = View.GONE
+        retryButton.visibility = View.VISIBLE
+        returnToSettingsButton.visibility = View.VISIBLE
+        forceUpdateButton.visibility = View.GONE
     }
 
     private fun notifyUserNoUpdateNeeded() {
@@ -108,52 +158,65 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        progressPercentage.visibility = View.GONE
+        // progressPercentage.visibility = View.GONE
+        forceUpdateButton.visibility = View.VISIBLE
     }
 
     private fun notifyUserUpdateComplete() {
-        currentTaskDescription.text = "Update complete."
+        currentTaskDescription.text = "Update completed successfully."
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        progressPercentage.visibility = View.GONE
-    }
-
-    private fun navigateToHomePage() {
-        val intent = Intent(this, HomeActivity::class.java)
-        startActivity(intent)
+        // progressPercentage.visibility = View.GONE
+        forceUpdateButton.visibility = View.GONE // Ensure this is hidden
     }
 
     private fun observeProgress() {
         lifecycleScope.launch {
+            databaseUpdater.updateProgress.collect { progress ->
+                progressBar.progress = progress
+                progressPercentage.text = "$progress%"
+            }
+        }
+
+        lifecycleScope.launch {
             databaseUpdater.updateStage.collect { stage ->
+                Log.d("UpdateDatabaseActivity", "Current update stage: $stage")
                 when (stage) {
                     UpdateStage.Downloading -> currentTaskDescription.text = "Downloading GTFS data..."
                     UpdateStage.Extracting -> currentTaskDescription.text = "Extracting GTFS data..."
                     UpdateStage.Comparing -> currentTaskDescription.text = "Comparing GTFS data..."
                     UpdateStage.Importing -> currentTaskDescription.text = "Importing GTFS data..."
-                    UpdateStage.Completed -> currentTaskDescription.text = "Update complete."
-                    UpdateStage.DownloadError -> currentTaskDescription.text = "Download failed."
-                    UpdateStage.ExtractionError -> currentTaskDescription.text = "Extraction failed."
-                    UpdateStage.ComparisonError -> currentTaskDescription.text = "Comparison failed."
-                    UpdateStage.ImportError -> currentTaskDescription.text = "Import failed."
-                    UpdateStage.Error -> currentTaskDescription.text = "Update failed."
+                    UpdateStage.DownloadError -> notifyUserDownloadFailed()
+                    UpdateStage.ExtractionError -> notifyUserDownloadFailed()
+                    UpdateStage.ComparisonError -> notifyUserDownloadFailed()
+                    UpdateStage.ImportError -> notifyUserDownloadFailed()
+                    UpdateStage.Error -> notifyUserDownloadFailed()
+                    UpdateStage.Completed -> notifyUserUpdateComplete()
+                    UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
+                    UpdateStage.Idle -> {} // Add this branch to make the 'when' expression exhaustive
                 }
             }
         }
 
         lifecycleScope.launch {
-            databaseUpdater.updateProgress.collect { progress ->
-                withContext(Dispatchers.Main) {
-                    updateProgressBar(progress)
-                }
+            databaseUpdater.getImportProgress().collect { progress ->
+                progressBar.progress = progress
+                progressPercentage.text = "$progress%"
             }
         }
     }
 
-    private fun updateProgressBar(progress: Int) {
-        progressBar.progress = progress
-        progressPercentage.text = "$progress%" // Update percentage text
+    private fun navigateToHomePage() {
+        val intent = Intent(this, HomeActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+    private fun navigateToSettingsPage() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     override fun onBackPressed() {

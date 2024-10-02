@@ -1,6 +1,7 @@
 package com.mwmapps.transportoffline
 
 enum class UpdateStage {
+    Idle,
     Downloading,
     Extracting,
     Comparing,
@@ -10,5 +11,6 @@ enum class UpdateStage {
     ComparisonError,
     ImportError,
     Error,
-    Completed
+    Completed,
+    NoUpdateNeeded
 }

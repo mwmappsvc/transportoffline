@@ -20,21 +20,45 @@
         android:visibility="gone"
         android:padding="8dp" />
 
+    <!-- Remove or set visibility to gone for the progress percentage TextView -->
     <TextView
         android:id="@+id/progress_percentage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:visibility="visible"
+        android:visibility="gone"
         android:text="0%"
         android:layout_marginTop="8dp"
         android:layout_gravity="center_horizontal"/>
-
 
     <Button
         android:id="@+id/start_update_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Start Update"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/retry_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Retry"
+        android:visibility="gone"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/return_to_settings_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Return to Settings"
+        android:visibility="gone"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/force_update_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Force Update"
+        android:visibility="gone"
         android:padding="8dp" />
 
     <Button

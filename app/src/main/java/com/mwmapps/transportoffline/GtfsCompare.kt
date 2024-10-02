@@ -1,37 +1,21 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.URL
+import android.util.Log
 
 class GtfsCompare(private val context: Context) {
 
-    suspend fun isUpdateNeeded(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val gtfsDataDir = File(context.filesDir, "gtfs_data")
-                val existingFile = File(gtfsDataDir, "google_transit.zip")
-                val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-                val url = sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip") ?: return@withContext false
+    fun isNewData(): Boolean {
+        val newHash = calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
+        val oldHash = getStoredHash(context)
+        Log.d("GtfsCompare", "New hash: $newHash")
+        Log.d("GtfsCompare", "Old hash: $oldHash")
+        return newHash != oldHash
+    }
 
-                val urlConnection = URL(url).openConnection()
-                urlConnection.connect()
-                val newFileSize = urlConnection.contentLength
-
-                if (existingFile.exists()) {
-                    val existingFileSize = existingFile.length().toInt()
-                    LoggingControl.log(LoggingControl.LoggingGroup.COMPARE_SIMPLE, "Comparing file sizes: newFileSize=$newFileSize, existingFileSize=$existingFileSize")
-                    return@withContext newFileSize != existingFileSize
-                } else {
-                    LoggingControl.log(LoggingControl.LoggingGroup.COMPARE_SIMPLE, "Existing file not found, update needed")
-                    return@withContext true
-                }
-            } catch (e: Exception) {
-                LoggingControl.log(LoggingControl.LoggingGroup.COMPARE_SIMPLE, "Error comparing GTFS data. ${e.message}")
-                return@withContext false
-            }
-        }
+    fun storeHash(hash: String) {
+        storeHash(context, hash)
+        Log.d("GtfsCompare", "Stored hash: $hash")
     }
 }

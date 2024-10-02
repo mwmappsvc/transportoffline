@@ -19,6 +19,9 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
     private val _importProgress = MutableStateFlow(0)
     val importProgress: StateFlow<Int> = _importProgress.asStateFlow()
 
+    private val _currentTable = MutableStateFlow("")
+    val currentTable: StateFlow<String> = _currentTable.asStateFlow()
+
     suspend fun importData(): Boolean {
         var success = true
         db.beginTransaction()
@@ -56,6 +59,8 @@ class DataImporter(private val context: Context, private val db: SQLiteDatabase)
         return try {
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Starting import for table: $tableName")
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for table: $tableName")
+
+            _currentTable.value = tableName
 
             val file = File(context.filesDir, fileName)
             if (!file.exists()) {

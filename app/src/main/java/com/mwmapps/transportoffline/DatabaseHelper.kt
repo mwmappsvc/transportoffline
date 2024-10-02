@@ -7,6 +7,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.IOException
+import android.util.Log
 
 class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -59,6 +61,47 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         outputStream.flush()
         outputStream.close()
         inputStream.close()
+    }
+
+    fun copyDatabase(context: Context): Boolean {
+        return try {
+            val inputStream: InputStream = context.assets.open(DATABASE_NAME)
+            val outputFile = File(context.getDatabasePath(DATABASE_NAME).path)
+            val outputStream: OutputStream = FileOutputStream(outputFile)
+
+            val buffer = ByteArray(1024)
+            var length: Int
+            while (inputStream.read(buffer).also { length = it } > 0) {
+                outputStream.write(buffer, 0, length)
+            }
+
+            outputStream.flush()
+            outputStream.close()
+            inputStream.close()
+            Log.d("DatabaseHelper", "Database copy completed successfully")
+            true
+        } catch (e: IOException) {
+            Log.e("DatabaseHelper", "Database copy failed: ${e.message}")
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun isDatabaseCopied(context: Context): Boolean {
+        val dbFile = context.getDatabasePath(DATABASE_NAME)
+        val exists = dbFile.exists()
+        Log.d("DatabaseHelper", "Database copy verification: $exists")
+        return exists
+    }
+
+    fun deleteJournalFile() {
+        val journalFile = File(dbPath + "-journal")
+        if (journalFile.exists()) {
+            journalFile.delete()
+            Log.d("DatabaseHelper", "Journal file deleted")
+        } else {
+            Log.d("DatabaseHelper", "No journal file to delete")
+        }
     }
 
     override fun getReadableDatabase(): SQLiteDatabase {

@@ -24,7 +24,14 @@ class GtfsDownloader(private val context: Context) {
 
                 val fileLength = connection.contentLength
                 val inputStream = BufferedInputStream(connection.getInputStream())
-                val outputFile = File(context.filesDir, "gtfs.zip") // Use context.filesDir
+
+                // Ensure the gtfs_data directory exists
+                val gtfsDataDir = File(context.filesDir, "gtfs_data")
+                if (!gtfsDataDir.exists()) {
+                    gtfsDataDir.mkdirs()
+                }
+
+                val outputFile = File(gtfsDataDir, "google_transit.zip")
                 val outputStream = FileOutputStream(outputFile)
                 val data = ByteArray(1024)
                 var total: Long = 0
