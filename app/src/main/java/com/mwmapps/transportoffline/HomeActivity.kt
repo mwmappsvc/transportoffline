@@ -43,7 +43,15 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         // Use the utility function to get the database with retry logic
-        val db = DatabaseUtils.getDatabaseWithRetry(this)
+        val dbHelper = DatabaseHelper(this)
+        if (!dbHelper.isImportComplete()) {
+            val intent = Intent(this, WelcomeActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
+        val db = dbHelper.writableDatabase
         dataQuery = DataQuery(db, this)
 
         // Log data from stop_times and trips tables

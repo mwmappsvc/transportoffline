@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import android.content.SharedPreferences
+import java.io.File
 
 class WelcomeActivity : AppCompatActivity() {
 
@@ -25,6 +26,19 @@ class WelcomeActivity : AppCompatActivity() {
         val sharedPreferences: SharedPreferences = getSharedPreferences("TransportOfflinePrefs", MODE_PRIVATE)
         val hasSeenWelcome = sharedPreferences.getBoolean("hasSeenWelcome", false)
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome: $hasSeenWelcome")
+
+        // Ensure the database file exists before proceeding
+        val dbFile = File(dbHelper.readableDatabase.path)
+        if (!dbFile.exists()) {
+            Log.e("WelcomeActivity", "Database file does not exist. Aborting.")
+            return
+        }
+
+        // Check if the database import is complete
+        if (!dbHelper.isImportComplete()) {
+            Log.e("WelcomeActivity", "Database import is incomplete. Aborting.")
+            return
+        }
 
         if (hasSeenWelcome) {
             // If the user has already seen the Welcome screen, go directly to HomeActivity

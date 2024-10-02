@@ -75,7 +75,7 @@ class DatabaseUpdater(
 
                 _updateStage.value = UpdateStage.Importing
                 val db = dbHelper.writableDatabase
-                val importer = DataImporter(context, db)
+                val importer = DataImporter(context)
                 val importSuccess = importer.importData()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
@@ -125,9 +125,10 @@ class DatabaseUpdater(
                     _updateStage.value = UpdateStage.DownloadError
                     return@withContext false
                 }
+
                 _updateStage.value = UpdateStage.Importing
                 val db = dbHelper.writableDatabase
-                val importer = DataImporter(context, db)
+                val importer = DataImporter(context)
                 val importSuccess = importer.importData()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
@@ -150,5 +151,14 @@ class DatabaseUpdater(
 
     fun getImportProgress(): StateFlow<Int> {
         return _updateProgress
+    }
+
+    private fun calculateHash(file: File): String {
+        // Your logic to calculate the hash of the file
+        return "hash_value"
+    }
+
+    private fun storeHash(context: Context, hash: String) {
+        // Your logic to store the hash
     }
 }

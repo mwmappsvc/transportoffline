@@ -1,5 +1,6 @@
 package com.mwmapps.transportoffline
 
+import android.content.ContentValues // Add this import
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -16,6 +17,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         private const val DATABASE_NAME = "bus_schedule.db"
         private const val DATABASE_VERSION = 2 // Increment this if you make schema changes
         private const val DATABASE_PATH = "/databases/"
+        private const val IMPORT_COMPLETE_FLAG = "import_complete"
     }
 
     private val dbPath: String = context.applicationInfo.dataDir + DATABASE_PATH + DATABASE_NAME
@@ -23,6 +25,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     init {
         if (!checkDatabase()) {
             copyDatabaseFromAssets()
+            setImportComplete(false)
         }
     }
 
@@ -35,6 +38,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         if (oldVersion < newVersion) {
             context.deleteDatabase(DATABASE_NAME)
             copyDatabaseFromAssets()
+            setImportComplete(false)
         }
     }
 
@@ -109,6 +113,27 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     override fun getWritableDatabase(): SQLiteDatabase {
-        return SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
+        var db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
+        if (db.isReadOnly) {
+            copyDatabaseFromAssets()
+            db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
+        }
+        return db
+    }
+
+    fun isImportComplete(): Boolean {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT value FROM flags WHERE key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
+        val isComplete = cursor.moveToFirst() && cursor.getInt(0) == 1
+        cursor.close()
+        return isComplete
+    }
+
+    fun setImportComplete(complete: Boolean) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("value", if (complete) 1 else 0)
+        }
+        db.update("flags", values, "key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
     }
 }
