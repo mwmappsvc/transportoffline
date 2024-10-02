@@ -2,18 +2,19 @@ package com.mwmapps.transportoffline
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.ui.semantics.text
+import androidx.glance.visibility
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.util.Log
 
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var currentTaskDescription: TextView
@@ -38,12 +39,10 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         returnToSettingsButton = findViewById(R.id.return_to_settings_button)
         forceUpdateButton = findViewById(R.id.force_update_button)
 
-        // Initialize DatabaseUpdater and GtfsCompare with context, DatabaseHelper, and lifecycleScope
         val dbHelper = DatabaseHelper(this)
         databaseUpdater = DatabaseUpdater(this, dbHelper, lifecycleScope)
         gtfsCompare = GtfsCompare(this)
 
-        // Initially hide the progress bar, task description, percentage, and additional buttons
         progressBar.visibility = View.GONE
         currentTaskDescription.visibility = View.GONE
         progressPercentage.visibility = View.GONE
@@ -58,7 +57,6 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 startUpdateButton.isEnabled = false
                 progressBar.visibility = View.VISIBLE
                 currentTaskDescription.visibility = View.VISIBLE
-                // progressPercentage.visibility = View.VISIBLE
             } else if (startUpdateButton.text == "Bus Schedules") {
                 navigateToHomePage()
             }
@@ -76,11 +74,9 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             forceUpdateProcess()
         }
 
-        // Handle back press during update
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (startUpdateButton.text == "Please Wait") {
-                    // Show a message to the user
                     currentTaskDescription.text = "Update in progress. Please wait..."
                 } else {
                     isEnabled = false
@@ -98,19 +94,10 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             }
             withContext(Dispatchers.Main) {
                 Log.d("UpdateDatabaseActivity", "Update process completed with result: $updateSuccess")
-                // Check the update stage to determine the correct UI update
-                databaseUpdater.updateStage.collect { stage ->
-                    when (stage) {
-                        UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
-                        UpdateStage.Completed -> notifyUserUpdateComplete()
-                        else -> {
-                            if (updateSuccess) {
-                                notifyUserUpdateComplete()
-                            } else {
-                                notifyUserDownloadFailed()
-                            }
-                        }
-                    }
+                if (updateSuccess) {
+                    notifyUserUpdateComplete()
+                } else {
+                    notifyUserDownloadFailed()
                 }
             }
         }
@@ -124,19 +111,10 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             }
             withContext(Dispatchers.Main) {
                 Log.d("UpdateDatabaseActivity", "Force update process completed with result: $updateSuccess")
-                // Check the update stage to determine the correct UI update
-                databaseUpdater.updateStage.collect { stage ->
-                    when (stage) {
-                        UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
-                        UpdateStage.Completed -> notifyUserUpdateComplete()
-                        else -> {
-                            if (updateSuccess) {
-                                notifyUserUpdateComplete()
-                            } else {
-                                notifyUserDownloadFailed()
-                            }
-                        }
-                    }
+                if (updateSuccess) {
+                    notifyUserUpdateComplete()
+                } else {
+                    notifyUserDownloadFailed()
                 }
             }
         }
@@ -147,7 +125,6 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         startUpdateButton.text = "Retry"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        // progressPercentage.visibility = View.GONE
         retryButton.visibility = View.VISIBLE
         returnToSettingsButton.visibility = View.VISIBLE
         forceUpdateButton.visibility = View.GONE
@@ -158,7 +135,6 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        // progressPercentage.visibility = View.GONE
         forceUpdateButton.visibility = View.VISIBLE
     }
 
@@ -167,8 +143,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
-        // progressPercentage.visibility = View.GONE
-        forceUpdateButton.visibility = View.GONE // Ensure this is hidden
+        forceUpdateButton.visibility = View.GONE
     }
 
     private fun observeProgress() {
@@ -187,22 +162,15 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                     UpdateStage.Extracting -> currentTaskDescription.text = "Extracting GTFS data..."
                     UpdateStage.Comparing -> currentTaskDescription.text = "Comparing GTFS data..."
                     UpdateStage.Importing -> currentTaskDescription.text = "Importing GTFS data..."
-                    UpdateStage.DownloadError -> notifyUserDownloadFailed()
-                    UpdateStage.ExtractionError -> notifyUserDownloadFailed()
-                    UpdateStage.ComparisonError -> notifyUserDownloadFailed()
-                    UpdateStage.ImportError -> notifyUserDownloadFailed()
+                    UpdateStage.DownloadError,
+                    UpdateStage.ExtractionError,
+                    UpdateStage.ComparisonError,
+                    UpdateStage.ImportError,
                     UpdateStage.Error -> notifyUserDownloadFailed()
                     UpdateStage.Completed -> notifyUserUpdateComplete()
                     UpdateStage.NoUpdateNeeded -> notifyUserNoUpdateNeeded()
-                    UpdateStage.Idle -> {} // Add this branch to make the 'when' expression exhaustive
+                    UpdateStage.Idle -> {}
                 }
-            }
-        }
-
-        lifecycleScope.launch {
-            databaseUpdater.getImportProgress().collect { progress ->
-                progressBar.progress = progress
-                progressPercentage.text = "$progress%"
             }
         }
     }
@@ -220,9 +188,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        // Handle back press during update
         if (startUpdateButton.text == "Please Wait") {
-            // Show a message to the user
             currentTaskDescription.text = "Update in progress. Please wait..."
         } else {
             super.onBackPressed()

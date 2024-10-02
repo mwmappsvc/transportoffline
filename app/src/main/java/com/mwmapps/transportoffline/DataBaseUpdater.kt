@@ -26,8 +26,8 @@ class DatabaseUpdater(
 
     suspend fun startUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
+            var importSuccess = false
             try {
-                // Copy the database before starting the update
                 Log.d("DatabaseUpdater", "Starting database copy...")
                 if (!dbHelper.copyDatabase(context)) {
                     _updateStage.value = UpdateStage.Error
@@ -42,25 +42,20 @@ class DatabaseUpdater(
                     return@withContext false
                 }
 
-                // Delete the journal file to ensure a clean state
                 dbHelper.deleteJournalFile()
 
-                // Proceed with the existing update process
                 _updateStage.value = UpdateStage.Downloading
                 val downloader = GtfsDownloader(context)
-                val downloadSuccess = downloader.downloadGtfsData(gtfsUrl)
-                if (!downloadSuccess) {
+                importSuccess = downloader.downloadGtfsData(gtfsUrl)
+                if (!importSuccess) {
                     _updateStage.value = UpdateStage.DownloadError
                     return@withContext false
                 }
 
                 _updateStage.value = UpdateStage.Extracting
                 val extractor = GtfsExtractor(context)
-                val extractSuccess = extractor.extractGtfsData(
-                    "${context.filesDir}/gtfs_data/google_transit.zip",
-                    "${context.filesDir}/gtfs_data"
-                )
-                if (!extractSuccess) {
+                importSuccess = extractor.extractData()
+                if (!importSuccess) {
                     _updateStage.value = UpdateStage.ExtractionError
                     return@withContext false
                 }
@@ -76,13 +71,12 @@ class DatabaseUpdater(
                 _updateStage.value = UpdateStage.Importing
                 val db = dbHelper.writableDatabase
                 val importer = DataImporter(context)
-                val importSuccess = importer.importData()
+                importSuccess = importer.startUpdate()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
                 }
 
-                // Store the new hash after a successful update
                 val newHash = calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
                 storeHash(context, newHash)
 
@@ -98,8 +92,8 @@ class DatabaseUpdater(
 
     suspend fun forceUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
+            var importSuccess = false
             try {
-                // Copy the database before starting the update
                 Log.d("DatabaseUpdater", "Starting database copy...")
                 if (!dbHelper.copyDatabase(context)) {
                     _updateStage.value = UpdateStage.Error
@@ -114,14 +108,12 @@ class DatabaseUpdater(
                     return@withContext false
                 }
 
-                // Delete the journal file to ensure a clean state
                 dbHelper.deleteJournalFile()
 
-                // Proceed with the existing update process
                 _updateStage.value = UpdateStage.Downloading
                 val downloader = GtfsDownloader(context)
-                val downloadSuccess = downloader.downloadGtfsData(gtfsUrl)
-                if (!downloadSuccess) {
+                importSuccess = downloader.downloadGtfsData(gtfsUrl)
+                if (!importSuccess) {
                     _updateStage.value = UpdateStage.DownloadError
                     return@withContext false
                 }
@@ -129,13 +121,12 @@ class DatabaseUpdater(
                 _updateStage.value = UpdateStage.Importing
                 val db = dbHelper.writableDatabase
                 val importer = DataImporter(context)
-                val importSuccess = importer.importData()
+                importSuccess = importer.startUpdate()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
                 }
 
-                // Store the new hash after a successful update
                 val newHash = calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
                 storeHash(context, newHash)
 
@@ -149,9 +140,6 @@ class DatabaseUpdater(
         }
     }
 
-    fun getImportProgress(): StateFlow<Int> {
-        return _updateProgress
-    }
 
     private fun calculateHash(file: File): String {
         // Your logic to calculate the hash of the file
