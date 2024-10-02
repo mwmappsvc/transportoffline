@@ -43,6 +43,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.glance:glance-appwidget:1.0.0-alpha05")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2") // Or latest version
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
