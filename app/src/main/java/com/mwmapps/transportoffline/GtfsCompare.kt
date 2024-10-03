@@ -1,12 +1,11 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin GtfsCompare.kt
+// Compares GTFS data hashes to determine if new data is available.
+// Externally Referenced Classes: HashUtils, LoggingControl
 package com.mwmapps.transportoffline
 
 import android.content.Context
 import java.io.File
 import android.util.Log
-// Section 2
 // IMPORTANT: Using HashUtils for hash-related functions
 class GtfsCompare(private val context: Context) {
 
@@ -23,4 +22,4 @@ class GtfsCompare(private val context: Context) {
         Log.d("GtfsCompare", "Stored hash: $hash")
     }
 }
-// Section 3
+// End GtfsCompare.kt

@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin DataQuery.kt
+// Provides methods to query the database.
+// Externally Referenced Classes: DatabaseHelper, LoggingControl, BusStop, BusSchedule
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -34,7 +34,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
             ORDER BY 
                 arrival_time
         """, arrayOf(stopId))
-// Section 3
+
         val busSchedules = mutableListOf<BusSchedule>()
         while (cursor.moveToNext()) {
             val stopSequence = cursor.getInt(cursor.getColumnIndexOrThrow("stop_sequence"))
@@ -45,7 +45,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         cursor.close()
         return busSchedules
     }
-// Section 4
+
     fun logStopTimesForStopId(stopId: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging stop_times for stop_id: $stopId")
         val cursor = db.rawQuery("SELECT * FROM stop_times WHERE stop_id = ?", arrayOf(stopId))
@@ -84,7 +84,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         }
         cursor.close()
     }
-// Section 5
+
     fun logTrips() {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging all trips")
         val cursor = db.rawQuery("SELECT * FROM trips", null)
@@ -109,4 +109,4 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         cursor.close()
     }
 }
-// Section 6
+// End DataQuery.kt

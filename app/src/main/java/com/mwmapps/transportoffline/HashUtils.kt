@@ -1,5 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
+// Begin HashUtils.kt
+// Provides utility methods for calculating and storing hashes.
+// Externally Referenced Classes:
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -7,7 +8,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.MessageDigest
-// Section 2
 
 object HashUtils {
     fun calculateHash(file: File): String {
@@ -23,7 +23,7 @@ object HashUtils {
         inputStream.close()
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
-    // Section 3
+
     fun storeHash(context: Context, hash: String) {
         val hashFile = File(context.filesDir, "gtfs_hash.txt")
         hashFile.writeText(hash)
@@ -38,4 +38,4 @@ object HashUtils {
         }
     }
 }
-// Section 4
+// End HashUtils.kt

@@ -1,4 +1,6 @@
-// Section 1
+// Being DataImporter.kt
+// Imports GTFS data into the database.
+// Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -14,7 +16,7 @@ import java.io.FileInputStream
 import java.io.InputStream
 
 private const val BATCH_SIZE = 1000 // Adjust this value as needed
-// Section 2
+
 class DataImporter(private val context: Context, private val dbHelper: DatabaseHelper) {
 
     val progressChannel = Channel<Int>()
@@ -46,6 +48,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         }
 
         db.endTransaction()
+        db.close() // Ensure the database is closed
         return success
     }
 
@@ -53,22 +56,24 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
     // Heads-up: Ensure custom tags are used instead of context in logMessage calls
     suspend fun importGtfsData(gtfsDir: String): Boolean {
         return withContext(Dispatchers.IO) {
+            val db = dbHelper.writableDatabase
             try {
-                importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), dbHelper.writableDatabase)
-                importTableData("$gtfsDir/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), db)
+                importTableData("$gtfsDir/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), db)
+                importTableData("$gtfsDir/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), db)
+                importTableData("$gtfsDir/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), db)
+                importTableData("$gtfsDir/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), db)
+                importTableData("$gtfsDir/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), db)
+                importTableData("$gtfsDir/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), db)
                 true
             } catch (e: Exception) {
                 Log.e("DataImporter", "Error importing GTFS data", e)
                 false
+            } finally {
+                db.close() // Ensure the database is closed
             }
         }
     }
-    // Section 3
     // Heads-up: Ensure file paths are correctly passed as strings
     // Heads-up: Ensure custom tags are used instead of context in logMessage calls
     private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>, db: SQLiteDatabase): Boolean {
@@ -102,9 +107,14 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                     LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Missing values for table: $tableName. Expected ${columns.size}, but got ${values.size}")
                     continue
                 }
-// Section 4
                 // Map the values to the correct columns for each table
                 val mappedValues = when (tableName) {
+                    "agency" -> listOf(
+                        values[3],  // agency_id
+                        values[1],  // agency_name
+                        values[0],  // agency_url
+                        values[2]   // agency_timezone
+                    )
                     "stops" -> listOf(
                         values[10], // stop_id
                         values[2],  // stop_code
@@ -187,7 +197,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                 }
                 valuesList.add("(${mappedValues.joinToString(",") { "'$it'" }})")
                 rowCount++
-// Section 5
+
                 if (rowCount % BATCH_SIZE == 0) {
                     db.execSQL("INSERT INTO $tableName (${columns.joinToString(",")}) VALUES ${valuesList.joinToString(",")}")
                     valuesList.clear()
@@ -227,4 +237,4 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         // Your logic to log the specific stop number 16709
     }
 }
-// Section 6
+// End DataImporter.kt

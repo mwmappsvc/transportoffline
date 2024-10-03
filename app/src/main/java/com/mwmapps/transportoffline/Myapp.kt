@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin Myapp.kt
+// Application class for initializing global settings.
+// Externally Referenced Classes: LoggingControl
 
 package com.mwmapps.transportoffline
 
@@ -13,4 +13,4 @@ class MyApp : Application() {
         LoggingControl.initialize(this)
     }
 }
-// Section 2
+// End Myapp.kt

@@ -1,6 +1,7 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin UpdateDatabaseActivity.kt
+// Associated layout file: activity_update_database.xml
+// Manages the database update process.
+// Externally Referenced Classes: DatabaseHelper, DatabaseUpdater, GtfsCompare, HomeActivity, SettingsActivity
 package com.mwmapps.transportoffline
 
 import android.content.Intent
@@ -16,7 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-// Section 2
+
 class UpdateDatabaseActivity : AppCompatActivity() {
     private lateinit var currentTaskDescription: TextView
     private lateinit var progressBar: ProgressBar
@@ -31,7 +32,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_update_database)
-// Section 3
+
         currentTaskDescription = findViewById(R.id.current_task_description)
         progressBar = findViewById(R.id.progress_bar)
         progressPercentage = findViewById(R.id.progress_percentage)
@@ -50,7 +51,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         retryButton.visibility = View.GONE
         returnToSettingsButton.visibility = View.GONE
         forceUpdateButton.visibility = View.GONE
-// Section 4
+
         startUpdateButton.setOnClickListener {
             if (startUpdateButton.text == "Start Update") {
                 startUpdateProcess()
@@ -62,7 +63,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 navigateToHomePage()
             }
         }
-// Section 5
+
         retryButton.setOnClickListener {
             startUpdateProcess()
         }
@@ -86,7 +87,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             }
         })
     }
-// Section 6
+
     private fun startUpdateProcess() {
         lifecycleScope.launch {
             observeProgress()
@@ -103,7 +104,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             }
         }
     }
-// Section 7
+
     private fun forceUpdateProcess() {
         lifecycleScope.launch {
             observeProgress()
@@ -130,7 +131,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         returnToSettingsButton.visibility = View.VISIBLE
         forceUpdateButton.visibility = View.GONE
     }
-// Section 8
+
     private fun notifyUserNoUpdateNeeded() {
         currentTaskDescription.text = "No update needed."
         startUpdateButton.text = "Bus Schedules"
@@ -154,7 +155,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
                 progressPercentage.text = "$progress%"
             }
         }
-// Section 9
+
         lifecycleScope.launch {
             databaseUpdater.updateStage.collect { stage ->
                 Log.d("UpdateDatabaseActivity", "Current update stage: $stage")
@@ -175,7 +176,7 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             }
         }
     }
-// Section 10
+
     private fun navigateToHomePage() {
         val intent = Intent(this, HomeActivity::class.java)
         startActivity(intent)
@@ -196,4 +197,4 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
     }
 }
-// Section 11
+// End UpdateDatabaseActivity.kt

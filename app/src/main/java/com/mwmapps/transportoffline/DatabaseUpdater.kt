@@ -1,4 +1,6 @@
-// Section 1
+// Begin DatabaseUpdater.kt
+// Handles the database update process.
+// Externally Referenced Classes: DatabaseHelper, GtfsDownloader, GtfsExtractor, GtfsCompare, DataImporter, HashUtils
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -9,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import android.util.Log
-// Section 2
+
 class DatabaseUpdater(
     private val context: Context,
     private val dbHelper: DatabaseHelper,
@@ -24,7 +26,7 @@ class DatabaseUpdater(
 
     private val _currentTable = MutableStateFlow("")
     val currentTable: StateFlow<String> = _currentTable
-    // Section 3
+
     suspend fun startUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -41,7 +43,7 @@ class DatabaseUpdater(
                     Log.e("DatabaseUpdater", "Database copy verification failed")
                     return@withContext false
                 }
-// Section 4
+
                 dbHelper.deleteJournalFile()
 
                 _updateStage.value = UpdateStage.Downloading
@@ -91,7 +93,7 @@ class DatabaseUpdater(
             }
         }
     }
-    // Section 5
+
     suspend fun forceUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -139,7 +141,7 @@ class DatabaseUpdater(
             }
         }
     }
-    // Section 6
+
     private fun calculateHash(file: File): String {
         // Your logic to calculate the hash of the file
         return "hash_value"
@@ -149,4 +151,4 @@ class DatabaseUpdater(
         // Your logic to store the hash
     }
 }
-// Section 7
+// End DatabaseUpdater.kt

@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin GtfsDownloader.kt
+// Downloads GTFS data.
+// Externally Referenced Classes: LoggingControl
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -13,7 +13,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 import android.util.Log
-// Section 2
+
 class GtfsDownloader(private val context: Context) {
 
     private val _downloadProgress = MutableSharedFlow<Int>()
@@ -38,7 +38,7 @@ class GtfsDownloader(private val context: Context) {
                 val outputStream = FileOutputStream(outputFile)
                 val data = ByteArray(1024)
                 var total: Long = 0
-// Section 3
+
                 while (true) {
                     val count = inputStream.read(data)
                     if (count == -1) break
@@ -49,7 +49,7 @@ class GtfsDownloader(private val context: Context) {
 
                     outputStream.write(data, 0, count)
                 }
-// Section 4
+
                 outputStream.flush()
                 outputStream.close()
                 inputStream.close()
@@ -63,4 +63,4 @@ class GtfsDownloader(private val context: Context) {
         }
     }
 }
-// Section 5
+// End GtfsDownloader.kt

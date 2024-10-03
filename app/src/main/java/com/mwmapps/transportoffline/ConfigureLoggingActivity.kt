@@ -1,12 +1,13 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin ConfigureLoggingActivity.kt
+// Associated layout file: activity_configure_logging.xml
+// Manages logging configuration.
+// Externally Referenced Classes: LoggingControl
 package com.mwmapps.transportoffline
 
 import android.os.Bundle
 import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
-// Section 2
+
 class ConfigureLoggingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,4 +30,4 @@ class ConfigureLoggingActivity : AppCompatActivity() {
         }
     }
 }
-// Section 3
+// End ConfigureLoggingActivity.kt

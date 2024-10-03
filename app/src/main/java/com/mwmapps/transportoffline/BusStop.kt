@@ -1,10 +1,10 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin BusStop.kt
+// Data class representing a bus stop.
+// Externally Referenced Classes: BusScheduleAdapter, DataQuery
 package com.mwmapps.transportoffline
 
 data class BusStop(
     val stopId: String,
     val stopName: String
 )
-// Section 2
+// End BusStop.kt

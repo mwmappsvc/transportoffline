@@ -1,12 +1,13 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin LoggingActivity.kt
+// Associated layout file: activity_logging.xml
+// Displays log information.
+// Externally Referenced Classes:
 package com.mwmapps.transportoffline
 
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-// Section 2
+
 class LoggingActivity : AppCompatActivity() {
     companion object {
         private lateinit var logTextView: TextView
@@ -17,7 +18,7 @@ class LoggingActivity : AppCompatActivity() {
             }
         }
     }
-// Section 3
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_logging)
@@ -25,4 +26,4 @@ class LoggingActivity : AppCompatActivity() {
         logTextView = findViewById(R.id.log_text_view)
     }
 }
-// Section 4
+// End LoggingActivity.kt

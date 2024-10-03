@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin DatabaseHelper.kt
+// Manages database creation and version management.
+// Externally Referenced Classes: DatabaseUpdater, DataImporter, DataQuery
 package com.mwmapps.transportoffline
 
 import android.content.ContentValues // Add this import
@@ -13,7 +13,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.IOException
 import android.util.Log
-// Section 2
+
 class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
@@ -49,7 +49,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         val dbFile = File(dbPath)
         return dbFile.exists()
     }
-// Section 3
+
     fun copyDatabaseFromAssets() {
         val dbDir = File(context.applicationInfo.dataDir + DATABASE_PATH)
         if (!dbDir.exists()) {
@@ -110,7 +110,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             Log.d("DatabaseHelper", "No journal file to delete")
         }
     }
-// Section 4
+
     override fun getReadableDatabase(): SQLiteDatabase {
         return SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY)
     }
@@ -140,4 +140,4 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         db.update("flags", values, "key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
     }
 }
-// Section 5
+// End DatabaseHelper.kt

@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin BusSchedule.kt
+// Data class representing a bus schedule.
+// Externally Referenced Classes: BusScheduleAdapter, DataQuery
 package com.mwmapps.transportoffline
 
 data class BusSchedule(
@@ -10,4 +10,4 @@ data class BusSchedule(
     val routeShortName: String,
     val routeLongName: String
 )
-// Section 2
+// End BusSchedule.kt

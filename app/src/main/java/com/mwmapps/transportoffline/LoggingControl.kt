@@ -1,12 +1,12 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin LoggingControl.kt
+// Manages logging settings and logs messages.
+// Externally Referenced Classes: LoggingActivity
 package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-// Section 2
+
 object LoggingControl {
     enum class LoggingGroup {
         IMPORT_SIMPLE, IMPORT_VERBOSE,
@@ -19,7 +19,7 @@ object LoggingControl {
     fun initialize(context: Context) {
         sharedPreferences = context.getSharedPreferences("LoggingPreferences", Context.MODE_PRIVATE)
     }
-// Section 3
+
     fun setLoggingState(group: LoggingGroup, isEnabled: Boolean) {
         sharedPreferences.edit().putBoolean(group.name, isEnabled).apply()
     }
@@ -35,4 +35,4 @@ object LoggingControl {
         }
     }
 }
-// Section 4
+// End LoggingControl.kt

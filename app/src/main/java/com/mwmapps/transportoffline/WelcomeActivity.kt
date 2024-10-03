@@ -1,6 +1,7 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin WelcomeActivity.kt
+// Associated layout file: activity_welcome.xml
+// Screen shown once at launch, initial setup
+// Externally Referenced Classes: Potentially checks for database updates or guides users to UpdateDatabaseActivity
 package com.mwmapps.transportoffline
 
 import android.content.Intent
@@ -10,7 +11,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import android.content.SharedPreferences
 import java.io.File
-// Section 2
+
 class WelcomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,55 +24,59 @@ class WelcomeActivity : AppCompatActivity() {
 
         // Log database path for debugging
         val db = dbHelper.readableDatabase
-        Log.d("DATABASE_PATH", db.path)
+        try {
+            Log.d("DATABASE_PATH", db.path)
 
-        // Check if the user has already seen the Welcome screen
-        val sharedPreferences: SharedPreferences = getSharedPreferences("TransportOfflinePrefs", MODE_PRIVATE)
-        val hasSeenWelcome = sharedPreferences.getBoolean("hasSeenWelcome", false)
-        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome: $hasSeenWelcome")
+            // Check if the user has already seen the Welcome screen
+            val sharedPreferences: SharedPreferences = getSharedPreferences("TransportOfflinePrefs", MODE_PRIVATE)
+            val hasSeenWelcome = sharedPreferences.getBoolean("hasSeenWelcome", false)
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome: $hasSeenWelcome")
 
-        // Ensure the database file exists before proceeding
-        val dbFile = File(dbHelper.readableDatabase.path)
-        if (!dbFile.exists()) {
-            Log.e("WelcomeActivity", "Database file does not exist. Aborting.")
-            return
-        }
-// Section 3
-        // Check if the database import is complete
-        val isImportComplete = dbHelper.isImportComplete()
-        Log.d("WelcomeActivity", "Database import complete flag: $isImportComplete")
-        if (!isImportComplete) {
-            Log.e("WelcomeActivity", "Database import is incomplete. Aborting.")
-            return
-        }
-
-        if (hasSeenWelcome) {
-            // If the user has already seen the Welcome screen, go directly to HomeActivity
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "User has seen the Welcome screen, navigating to HomeActivity")
-            val intent = Intent(this, HomeActivity::class.java)
-            startActivity(intent)
-            finish()
-        } else {
-            // If the user has not seen the Welcome screen, show it
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "User has not seen the Welcome screen, showing Welcome screen")
-            setContentView(R.layout.activity_welcome)
-// Section 4
-            val nextButton: Button = findViewById(R.id.next_button)
-            nextButton.setOnClickListener {
-                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Next button clicked")
-
-                // Mark that the user has seen the Welcome screen
-                val editor: SharedPreferences.Editor = sharedPreferences.edit()
-                editor.putBoolean("hasSeenWelcome", true)
-                editor.apply()
-                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome set to true")
-
-                val intent = Intent(this, UpdateDatabaseActivity::class.java)
-                startActivity(intent)
-                finish() // Close the welcome activity
-                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Navigating to UpdateDatabaseActivity")
+            // Ensure the database file exists before proceeding
+            val dbFile = File(db.path)
+            if (!dbFile.exists()) {
+                Log.e("WelcomeActivity", "Database file does not exist. Aborting.")
+                return
             }
+
+            // Check if the database import is complete
+            val isImportComplete = dbHelper.isImportComplete()
+            Log.d("WelcomeActivity", "Database import complete flag: $isImportComplete")
+            if (!isImportComplete) {
+                Log.e("WelcomeActivity", "Database import is incomplete. Aborting.")
+                return
+            }
+
+            if (hasSeenWelcome) {
+                // If the user has already seen the Welcome screen, go directly to HomeActivity
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "User has seen the Welcome screen, navigating to HomeActivity")
+                val intent = Intent(this, HomeActivity::class.java)
+                startActivity(intent)
+                finish()
+            } else {
+                // If the user has not seen the Welcome screen, show it
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "User has not seen the Welcome screen, showing Welcome screen")
+                setContentView(R.layout.activity_welcome)
+
+                val nextButton: Button = findViewById(R.id.next_button)
+                nextButton.setOnClickListener {
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Next button clicked")
+
+                    // Mark that the user has seen the Welcome screen
+                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                    editor.putBoolean("hasSeenWelcome", true)
+                    editor.apply()
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome set to true")
+
+                    val intent = Intent(this, UpdateDatabaseActivity::class.java)
+                    startActivity(intent)
+                    finish() // Close the welcome activity
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Navigating to UpdateDatabaseActivity")
+                }
+            }
+        } finally {
+            db.close() // Ensure the database is closed
         }
     }
 }
-// Section 5
+// End WelcomeActivity.kt

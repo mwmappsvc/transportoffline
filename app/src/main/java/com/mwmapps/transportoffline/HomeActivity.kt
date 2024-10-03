@@ -1,6 +1,7 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin HomeActivity.kt
+// Associated layout file: activity_home.xml
+// Remains the primary screen for bus route searching and schedule viewing
+// Externally Referenced Classes: DatabaseHelper, HashUtils, DatabaseUtils, DataQuery, BusScheduleAdapter
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
-// Section 2
+
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var searchBar: EditText
@@ -45,7 +46,7 @@ class HomeActivity : AppCompatActivity() {
             fun fromDisplayName(displayName: String): TimeRange? = values().find { it.displayName == displayName }
         }
     }
-// Section 3
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
@@ -60,59 +61,63 @@ class HomeActivity : AppCompatActivity() {
         }
 
         val db = dbHelper.writableDatabase
-        dataQuery = DataQuery(db, this)
+        try {
+            dataQuery = DataQuery(db, this)
 
-        // Log data from stop_times and trips tables
-        dataQuery.logStopTimes()
-        dataQuery.logTrips()
+            // Log data from stop_times and trips tables
+            dataQuery.logStopTimes()
+            dataQuery.logTrips()
 
-        val settingsIcon: ImageView = findViewById(R.id.settings_icon)
-        settingsIcon.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        }
-// Section 4
-        searchBar = findViewById(R.id.search_bar)
-        recyclerView = findViewById(R.id.recycler_view)
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = BusScheduleAdapter(this) { busStop ->
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
-            displayBusSchedules(busStop)
-        }
-        recyclerView.adapter = adapter
-
-        timeRangeSpinner = findViewById(R.id.time_range_spinner)
-        ArrayAdapter.createFromResource(
-            this,
-            R.array.time_ranges,
-            android.R.layout.simple_spinner_item
-        ).also { adapter ->
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            timeRangeSpinner.adapter = adapter
-        }
-// Section 5
-        searchBar.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                val query = s.toString()
-                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query: $query")
-                searchBusStops(query)
+            val settingsIcon: ImageView = findViewById(R.id.settings_icon)
+            settingsIcon.setOnClickListener {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
             }
 
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        searchBar.setOnEditorActionListener(TextView.OnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_SEARCH || event?.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                val query = searchBar.text.toString()
-                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query submitted: $query")
-                searchBusStops(query)
-                return@OnEditorActionListener true
+            searchBar = findViewById(R.id.search_bar)
+            recyclerView = findViewById(R.id.recycler_view)
+            recyclerView.layoutManager = LinearLayoutManager(this)
+            adapter = BusScheduleAdapter(this) { busStop ->
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
+                displayBusSchedules(busStop)
             }
-            false
-        })
+            recyclerView.adapter = adapter
+
+            timeRangeSpinner = findViewById(R.id.time_range_spinner)
+            ArrayAdapter.createFromResource(
+                this,
+                R.array.time_ranges,
+                android.R.layout.simple_spinner_item
+            ).also { adapter ->
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                timeRangeSpinner.adapter = adapter
+            }
+
+            searchBar.addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) {
+                    val query = s.toString()
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query: $query")
+                    searchBusStops(query)
+                }
+
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
+
+            searchBar.setOnEditorActionListener(TextView.OnEditorActionListener { _, actionId, event ->
+                if (actionId == EditorInfo.IME_ACTION_SEARCH || event?.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                    val query = searchBar.text.toString()
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Search query submitted: $query")
+                    searchBusStops(query)
+                    return@OnEditorActionListener true
+                }
+                false
+            })
+        } finally {
+            db.close() // Ensure the database is closed
+        }
     }
-// Section 6
+
     private fun searchBusStops(query: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
         CoroutineScope(Dispatchers.IO).launch {
@@ -142,7 +147,7 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-// Section 7
+
     private fun filterBusSchedules(busSchedules: List<BusSchedule>): List<BusSchedule> {
         // Temporarily disable time filtering
         val filteredSchedules = busSchedules.map { schedule ->
@@ -160,4 +165,4 @@ class HomeActivity : AppCompatActivity() {
         return newFormat.format(date!!)
     }
 }
-// Section 8
+// End HomeActivity.kt

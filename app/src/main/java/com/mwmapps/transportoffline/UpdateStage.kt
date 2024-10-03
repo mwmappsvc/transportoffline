@@ -1,6 +1,6 @@
-// Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
+// Begin UpdateStage.kt
+// Enum class representing the different stages of the database update process.
+// Externally Referenced Classes:
 package com.mwmapps.transportoffline
 
 enum class UpdateStage {
@@ -17,4 +17,4 @@ enum class UpdateStage {
     Completed,
     NoUpdateNeeded
 }
-// Section 2
+// End UpdateStage.kt
