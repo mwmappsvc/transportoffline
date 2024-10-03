@@ -5,7 +5,10 @@ package com.mwmapps.transportoffline
 import android.content.Context
 import android.util.Log
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.io.InputStream
 // Section 2
 class DataImporter(private val context: Context) {
@@ -27,6 +30,7 @@ class DataImporter(private val context: Context) {
             false
         }
     }
+
     // Section 3
     private fun copyDatabaseAnew() {
         dbHelper.copyDatabaseFromAssets()
@@ -40,16 +44,25 @@ class DataImporter(private val context: Context) {
         if (zipFile.exists()) {
             try {
                 val filesToExtract = listOf("agency.txt", "calendar.txt", "routes.txt") // Add all necessary files here
-                for (fileName in filesToExtract) {
-                    val outputFile = File("${context.filesDir}/gtfs_data/$fileName")
-                    Log.d("DataImporter", "Extracting $fileName to ${outputFile.absolutePath}")
-                    val fos = FileOutputStream(outputFile)
-                    val fis: InputStream = context.assets.open(fileName)
-                    fis.copyTo(fos)
-                    fis.close()
-                    fos.close()
-                    Log.d("DataImporter", "$fileName extracted successfully.")
+                val zipInputStream = ZipInputStream(FileInputStream(zipFile))
+                var zipEntry: ZipEntry?
+
+                while (zipInputStream.nextEntry.also { zipEntry = it } != null) {
+                    if (filesToExtract.contains(zipEntry!!.name)) {
+                        val outputFile = File(extractDir, zipEntry!!.name)
+                        Log.d("DataImporter", "Extracting ${zipEntry!!.name} to ${outputFile.absolutePath}")
+                        val fos = FileOutputStream(outputFile)
+                        val buffer = ByteArray(1024)
+                        var length: Int
+                        while (zipInputStream.read(buffer).also { length = it } > 0) {
+                            fos.write(buffer, 0, length)
+                        }
+                        fos.close()
+                        zipInputStream.closeEntry()
+                        Log.d("DataImporter", "${zipEntry!!.name} extracted successfully.")
+                    }
                 }
+                zipInputStream.close()
             } catch (e: Exception) {
                 Log.e("DataImporter", "Error extracting files: ${e.message}")
                 throw e
@@ -60,6 +73,7 @@ class DataImporter(private val context: Context) {
         Log.d("DataImporter", "Data extraction completed.")
     }
 // Section 4
+
     private fun importData() {
         try {
             // Your logic for importing data from extracted files into the database
