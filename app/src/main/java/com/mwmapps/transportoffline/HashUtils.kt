@@ -8,31 +8,34 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.MessageDigest
 // Section 2
-fun calculateHash(file: File): String {
-    val digest = MessageDigest.getInstance("SHA-256")
-    val inputStream = FileInputStream(file)
-    val buffer = ByteArray(1024)
-    var bytesRead: Int
 
-    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-        digest.update(buffer, 0, bytesRead)
+object HashUtils {
+    fun calculateHash(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val inputStream = FileInputStream(file)
+        val buffer = ByteArray(1024)
+        var bytesRead: Int
+
+        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+            digest.update(buffer, 0, bytesRead)
+        }
+
+        inputStream.close()
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+    // Section 3
+    fun storeHash(context: Context, hash: String) {
+        val hashFile = File(context.filesDir, "gtfs_hash.txt")
+        hashFile.writeText(hash)
     }
 
-    inputStream.close()
-    return digest.digest().joinToString("") { "%02x".format(it) }
-}
-// Section 3
-fun storeHash(context: Context, hash: String) {
-    val hashFile = File(context.filesDir, "gtfs_hash.txt")
-    hashFile.writeText(hash)
-}
-
-fun getStoredHash(context: Context): String? {
-    val hashFile = File(context.filesDir, "gtfs_hash.txt")
-    return if (hashFile.exists()) {
-        hashFile.readText()
-    } else {
-        null
+    fun getStoredHash(context: Context): String? {
+        val hashFile = File(context.filesDir, "gtfs_hash.txt")
+        return if (hashFile.exists()) {
+            hashFile.readText()
+        } else {
+            null
+        }
     }
 }
 // Section 4

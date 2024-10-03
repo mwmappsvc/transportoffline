@@ -1,5 +1,6 @@
 // Section 1
 // Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
+// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -23,10 +24,3 @@ class GtfsCompare(private val context: Context) {
     }
 }
 // Section 3
-
-    fun storeHash(hash: String) {
-        storeHash(context, hash)
-        Log.d("GtfsCompare", "Stored hash: $hash")
-    }
-}
-// Section 4
