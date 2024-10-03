@@ -48,7 +48,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         db.endTransaction()
         return success
     }
-// Section 3
+    // Section 3
     private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
