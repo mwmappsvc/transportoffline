@@ -75,7 +75,7 @@ class DatabaseUpdater(
 
                 _updateStage.value = UpdateStage.Importing
                 val importer = DataImporter(context, dbHelper)
-                val importSuccess = importer.importData()
+                val importSuccess = importer.importGtfsData(context.filesDir.path + "/gtfs_data") // Pass directory path
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
@@ -123,7 +123,7 @@ class DatabaseUpdater(
 
                 _updateStage.value = UpdateStage.Importing
                 val importer = DataImporter(context, dbHelper)
-                val importSuccess = importer.importData()
+                val importSuccess = importer.importGtfsData(context.filesDir.path + "/gtfs_data") // Pass directory path
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false

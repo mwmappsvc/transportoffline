@@ -48,6 +48,24 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         db.endTransaction()
         return success
     }
+
+    suspend fun importGtfsData(gtfsDir: String): Boolean { // Added this function
+        return withContext(Dispatchers.IO) {
+            try {
+                importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), dbHelper.writableDatabase)
+                importTableData("$gtfsDir/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), dbHelper.writableDatabase)
+                true
+            } catch (e: Exception) {
+                Log.e("DataImporter", "Error importing GTFS data", e)
+                false
+            }
+        }
+    }
     // Section 3
     private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>, db: SQLiteDatabase): Boolean {
         return try {
