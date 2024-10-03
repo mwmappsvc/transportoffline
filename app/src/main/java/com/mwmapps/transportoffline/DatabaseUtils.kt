@@ -1,9 +1,11 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabaseLockedException
-
+// Section 2
 object DatabaseUtils {
     fun getDatabaseWithRetry(context: Context): SQLiteDatabase {
         val dbHelper = DatabaseHelper(context)
@@ -27,3 +29,4 @@ object DatabaseUtils {
         return db
     }
 }
+// Section 3

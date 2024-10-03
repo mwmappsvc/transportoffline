@@ -1,5 +1,8 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -7,8 +10,13 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
@@ -17,8 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.lifecycle.lifecycleScope
-
+// Section 2
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var searchBar: EditText
@@ -37,7 +44,7 @@ class HomeActivity : AppCompatActivity() {
             fun fromDisplayName(displayName: String): TimeRange? = values().find { it.displayName == displayName }
         }
     }
-
+// Section 3
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
@@ -63,7 +70,7 @@ class HomeActivity : AppCompatActivity() {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
-
+// Section 4
         searchBar = findViewById(R.id.search_bar)
         recyclerView = findViewById(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -82,7 +89,7 @@ class HomeActivity : AppCompatActivity() {
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             timeRangeSpinner.adapter = adapter
         }
-
+// Section 5
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 val query = s.toString()
@@ -104,7 +111,7 @@ class HomeActivity : AppCompatActivity() {
             false
         })
     }
-
+// Section 6
     private fun searchBusStops(query: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
         CoroutineScope(Dispatchers.IO).launch {
@@ -134,7 +141,7 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-
+// Section 7
     private fun filterBusSchedules(busSchedules: List<BusSchedule>): List<BusSchedule> {
         // Temporarily disable time filtering
         val filteredSchedules = busSchedules.map { schedule ->
@@ -147,8 +154,9 @@ class HomeActivity : AppCompatActivity() {
 
     private fun convertTo12HourFormat(time: String): String {
         val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        val date = dateFormat.parse(time)
+        val date: Date? = dateFormat.parse(time)
         val newFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        return newFormat.format(date)
+        return newFormat.format(date!!)
     }
 }
+// Section 8

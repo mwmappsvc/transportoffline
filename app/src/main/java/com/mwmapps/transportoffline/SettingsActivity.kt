@@ -1,3 +1,4 @@
+// Section 1
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -8,7 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-
+// Section 2
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +38,7 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
     }
-
+// Section 3
     private fun showConfigureUrlDialog() {
         val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         val currentUrl = sharedPreferences.getString("gtfs_url", "https://www.rtd-denver.com/files/gtfs/google_transit.zip")
@@ -60,7 +61,7 @@ class SettingsActivity : AppCompatActivity() {
             .create()
             .show()
     }
-
+// Section 4
     private fun saveUrlToPreferences(url: String) {
         val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
         with(sharedPreferences.edit()) {
@@ -69,3 +70,4 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 }
+// Section 5

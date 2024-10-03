@@ -1,9 +1,11 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.os.Bundle
 import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
-
+// Section 2
 class ConfigureLoggingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,3 +28,4 @@ class ConfigureLoggingActivity : AppCompatActivity() {
         }
     }
 }
+// Section 3

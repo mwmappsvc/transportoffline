@@ -1,3 +1,5 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -7,11 +9,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import android.util.Log
-
+// Section 2
 class GtfsExtractor(private val context: Context) {
 
     private val _extractionProgress = MutableSharedFlow<Int>()
@@ -32,7 +35,7 @@ class GtfsExtractor(private val context: Context) {
                 var zipEntry: ZipEntry?
                 var totalSize: Long = 0
                 var extractedSize: Long = 0
-
+// Section 3
                 // Calculate total size of the zip file
                 while (zipInputStream.nextEntry.also { zipEntry = it } != null) {
                     totalSize += zipEntry!!.size
@@ -48,7 +51,7 @@ class GtfsExtractor(private val context: Context) {
                 // Extract files and update progress
                 while (zipInputStream2.nextEntry.also { zipEntry = it } != null) {
                     val outputFile = File(outputDirectory, zipEntry!!.name)
-                    val outputStream = outputFile.outputStream()
+                    val outputStream = FileOutputStream(outputFile)
 
                     val buffer = ByteArray(1024)
                     var length: Int
@@ -58,7 +61,7 @@ class GtfsExtractor(private val context: Context) {
                         val progress = (extractedSize * 100 / totalSize).toInt()
                         _extractionProgress.emit(progress)
                     }
-
+// Section 4
                     outputStream.close()
                     zipInputStream2.closeEntry()
                 }
@@ -75,3 +78,4 @@ class GtfsExtractor(private val context: Context) {
         }
     }
 }
+// Section 5

@@ -1,3 +1,4 @@
+// Section 1
 package com.mwmapps.transportoffline
 
 enum class UpdateStage {
@@ -14,3 +15,4 @@ enum class UpdateStage {
     Completed,
     NoUpdateNeeded
 }
+// Section 2

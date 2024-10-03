@@ -1,3 +1,5 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -7,7 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-
+// Section 2
 class BusScheduleAdapter(private val context: Context, private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val busStops = mutableListOf<BusStop>()
@@ -33,7 +35,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         isDisplayingBusStops = false
         notifyDataSetChanged()
     }
-
+// Section 3
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == VIEW_TYPE_BUS_STOP) {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_stop, parent, false)
@@ -57,7 +59,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
     override fun getItemCount(): Int {
         return if (isDisplayingBusStops) busStops.size else busSchedules.size
     }
-
+//Section 4
     class BusStopViewHolder(itemView: View, private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.ViewHolder(itemView) {
         private val stopNameTextView: TextView = itemView.findViewById(R.id.stop_name)
 
@@ -84,9 +86,10 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
             routeNameTextView.text = "Route: ${busSchedule.routeShortName} - ${busSchedule.routeLongName}"
         }
     }
-
+// Section 5
     companion object {
         private const val VIEW_TYPE_BUS_STOP = 0
         private const val VIEW_TYPE_BUS_SCHEDULE = 1
     }
 }
+// Section 6

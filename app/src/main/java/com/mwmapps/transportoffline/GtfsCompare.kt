@@ -1,9 +1,11 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
 import java.io.File
 import android.util.Log
-
+// Section 2
 class GtfsCompare(private val context: Context) {
 
     fun isNewData(): Boolean {
@@ -13,9 +15,10 @@ class GtfsCompare(private val context: Context) {
         Log.d("GtfsCompare", "Old hash: $oldHash")
         return newHash != oldHash
     }
-
+// Section 3
     fun storeHash(hash: String) {
         storeHash(context, hash)
         Log.d("GtfsCompare", "Stored hash: $hash")
     }
 }
+// Section 4

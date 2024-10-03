@@ -1,3 +1,5 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -8,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import android.util.Log
-
+// Section 2
 class DatabaseUpdater(
     private val context: Context,
     private val dbHelper: DatabaseHelper,
@@ -23,10 +25,9 @@ class DatabaseUpdater(
 
     private val _currentTable = MutableStateFlow("")
     val currentTable: StateFlow<String> = _currentTable
-
+// Section 3
     suspend fun startUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            var importSuccess = false
             try {
                 Log.d("DatabaseUpdater", "Starting database copy...")
                 if (!dbHelper.copyDatabase(context)) {
@@ -41,21 +42,24 @@ class DatabaseUpdater(
                     Log.e("DatabaseUpdater", "Database copy verification failed")
                     return@withContext false
                 }
-
+// Section 4
                 dbHelper.deleteJournalFile()
 
                 _updateStage.value = UpdateStage.Downloading
                 val downloader = GtfsDownloader(context)
-                importSuccess = downloader.downloadGtfsData(gtfsUrl)
-                if (!importSuccess) {
+                val downloadSuccess = downloader.downloadGtfsData(gtfsUrl)
+                if (!downloadSuccess) {
                     _updateStage.value = UpdateStage.DownloadError
                     return@withContext false
                 }
 
                 _updateStage.value = UpdateStage.Extracting
                 val extractor = GtfsExtractor(context)
-                importSuccess = extractor.extractData()
-                if (!importSuccess) {
+                val extractionSuccess = extractor.extractGtfsData(
+                    zipFilePath = "${context.filesDir}/gtfs_data/google_transit.zip",
+                    outputDir = "${context.filesDir}/gtfs_data"
+                )
+                if (!extractionSuccess) {
                     _updateStage.value = UpdateStage.ExtractionError
                     return@withContext false
                 }
@@ -69,9 +73,8 @@ class DatabaseUpdater(
                 }
 
                 _updateStage.value = UpdateStage.Importing
-                val db = dbHelper.writableDatabase
                 val importer = DataImporter(context)
-                importSuccess = importer.startUpdate()
+                val importSuccess = importer.startUpdate()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
@@ -89,10 +92,9 @@ class DatabaseUpdater(
             }
         }
     }
-
+// Section 5
     suspend fun forceUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            var importSuccess = false
             try {
                 Log.d("DatabaseUpdater", "Starting database copy...")
                 if (!dbHelper.copyDatabase(context)) {
@@ -112,16 +114,15 @@ class DatabaseUpdater(
 
                 _updateStage.value = UpdateStage.Downloading
                 val downloader = GtfsDownloader(context)
-                importSuccess = downloader.downloadGtfsData(gtfsUrl)
-                if (!importSuccess) {
+                val downloadSuccess = downloader.downloadGtfsData(gtfsUrl)
+                if (!downloadSuccess) {
                     _updateStage.value = UpdateStage.DownloadError
                     return@withContext false
                 }
 
                 _updateStage.value = UpdateStage.Importing
-                val db = dbHelper.writableDatabase
                 val importer = DataImporter(context)
-                importSuccess = importer.startUpdate()
+                val importSuccess = importer.startUpdate()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
@@ -139,8 +140,7 @@ class DatabaseUpdater(
             }
         }
     }
-
-
+// Section 6
     private fun calculateHash(file: File): String {
         // Your logic to calculate the hash of the file
         return "hash_value"
@@ -150,3 +150,4 @@ class DatabaseUpdater(
         // Your logic to store the hash
     }
 }
+// Section 7

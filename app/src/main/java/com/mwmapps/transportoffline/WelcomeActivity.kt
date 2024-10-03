@@ -1,3 +1,5 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Intent
@@ -7,7 +9,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import android.content.SharedPreferences
 import java.io.File
-
+// Section 2
 class WelcomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,9 +35,11 @@ class WelcomeActivity : AppCompatActivity() {
             Log.e("WelcomeActivity", "Database file does not exist. Aborting.")
             return
         }
-
+// Section 3
         // Check if the database import is complete
-        if (!dbHelper.isImportComplete()) {
+        val isImportComplete = dbHelper.isImportComplete()
+        Log.d("WelcomeActivity", "Database import complete flag: $isImportComplete")
+        if (!isImportComplete) {
             Log.e("WelcomeActivity", "Database import is incomplete. Aborting.")
             return
         }
@@ -50,7 +54,7 @@ class WelcomeActivity : AppCompatActivity() {
             // If the user has not seen the Welcome screen, show it
             LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "User has not seen the Welcome screen, showing Welcome screen")
             setContentView(R.layout.activity_welcome)
-
+// Section 4
             val nextButton: Button = findViewById(R.id.next_button)
             nextButton.setOnClickListener {
                 LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Next button clicked")
@@ -69,3 +73,4 @@ class WelcomeActivity : AppCompatActivity() {
         }
     }
 }
+// Section 5

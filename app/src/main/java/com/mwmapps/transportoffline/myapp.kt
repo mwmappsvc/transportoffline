@@ -1,3 +1,6 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
+
 package com.mwmapps.transportoffline
 
 import android.app.Application
@@ -9,3 +12,4 @@ class MyApp : Application() {
         LoggingControl.initialize(this)
     }
 }
+// Section 2

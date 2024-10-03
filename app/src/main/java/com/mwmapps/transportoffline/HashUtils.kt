@@ -1,3 +1,5 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -5,7 +7,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.MessageDigest
-
+// Section 2
 fun calculateHash(file: File): String {
     val digest = MessageDigest.getInstance("SHA-256")
     val inputStream = FileInputStream(file)
@@ -19,7 +21,7 @@ fun calculateHash(file: File): String {
     inputStream.close()
     return digest.digest().joinToString("") { "%02x".format(it) }
 }
-
+// Section 3
 fun storeHash(context: Context, hash: String) {
     val hashFile = File(context.filesDir, "gtfs_hash.txt")
     hashFile.writeText(hash)
@@ -33,3 +35,4 @@ fun getStoredHash(context: Context): String? {
         null
     }
 }
+// Section 4

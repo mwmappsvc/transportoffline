@@ -1,8 +1,10 @@
+// Section 1
+// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
 package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-
+// Section 2
 class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
 
     fun searchBusStops(query: String): List<BusStop> {
@@ -31,7 +33,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
             ORDER BY 
                 arrival_time
         """, arrayOf(stopId))
-
+// Section 3
         val busSchedules = mutableListOf<BusSchedule>()
         while (cursor.moveToNext()) {
             val stopSequence = cursor.getInt(cursor.getColumnIndexOrThrow("stop_sequence"))
@@ -42,7 +44,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         cursor.close()
         return busSchedules
     }
-
+// Section 4
     fun logStopTimesForStopId(stopId: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging stop_times for stop_id: $stopId")
         val cursor = db.rawQuery("SELECT * FROM stop_times WHERE stop_id = ?", arrayOf(stopId))
@@ -81,7 +83,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         }
         cursor.close()
     }
-
+// Section 5
     fun logTrips() {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging all trips")
         val cursor = db.rawQuery("SELECT * FROM trips", null)
@@ -106,3 +108,4 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         cursor.close()
     }
 }
+// Section 6
