@@ -26,7 +26,7 @@ class DatabaseUpdater(
 
     private val _currentTable = MutableStateFlow("")
     val currentTable: StateFlow<String> = _currentTable
-// Section 3
+    // Section 3
     suspend fun startUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -74,15 +74,15 @@ class DatabaseUpdater(
                 }
 
                 _updateStage.value = UpdateStage.Importing
-                val importer = DataImporter(context)
-                val importSuccess = importer.startUpdate()
+                val importer = DataImporter(context, dbHelper)
+                val importSuccess = importer.importData()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
                 }
 
-                val newHash = calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
-                storeHash(context, newHash)
+                val newHash = HashUtils.calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
+                HashUtils.storeHash(context, newHash)
 
                 _updateStage.value = UpdateStage.Completed
                 true
@@ -93,7 +93,7 @@ class DatabaseUpdater(
             }
         }
     }
-// Section 5
+    // Section 5
     suspend fun forceUpdate(gtfsUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -122,15 +122,15 @@ class DatabaseUpdater(
                 }
 
                 _updateStage.value = UpdateStage.Importing
-                val importer = DataImporter(context)
-                val importSuccess = importer.startUpdate()
+                val importer = DataImporter(context, dbHelper)
+                val importSuccess = importer.importData()
                 if (!importSuccess) {
                     _updateStage.value = UpdateStage.ImportError
                     return@withContext false
                 }
 
-                val newHash = calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
-                storeHash(context, newHash)
+                val newHash = HashUtils.calculateHash(File(context.filesDir, "gtfs_data/google_transit.zip"))
+                HashUtils.storeHash(context, newHash)
 
                 _updateStage.value = UpdateStage.Completed
                 true
@@ -141,7 +141,7 @@ class DatabaseUpdater(
             }
         }
     }
-// Section 6
+    // Section 6
     private fun calculateHash(file: File): String {
         // Your logic to calculate the hash of the file
         return "hash_value"
