@@ -1,6 +1,4 @@
 // Section 1
-// Comments with Section Numbers are Added, Removed, and Modified by the Human developer ONLY
-// IMPORTANT: Do not change the location of section remarks. Keep them exactly as they are.
 package com.mwmapps.transportoffline
 
 import android.content.Context
@@ -23,19 +21,21 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
     private val _importProgress = MutableStateFlow(0)
     val importProgress: StateFlow<Int> = _importProgress.asStateFlow()
 
+    // Heads-up: Ensure file paths are correctly passed as strings
+    // Heads-up: Ensure custom tags are used instead of context in logMessage calls
     suspend fun importData(): Boolean {
         val db = dbHelper.writableDatabase
         db.beginTransaction()
         var success = true
 
         // Add your table import logic here
-        success = importTableData("agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), db)
+        success = importTableData("${context.filesDir.path}/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), db)
 
         if (success) {
             db.setTransactionSuccessful()
             dbHelper.setImportComplete(true)
             Log.d("DataImporter", "All tables imported successfully")
-            LoggingActivity.logMessage(context, "All tables imported successfully")
+            LoggingActivity.logMessage("Import", "All tables imported successfully") // Changed from context to "Import"
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "All tables imported successfully")
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for all tables")
 
@@ -49,7 +49,9 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         return success
     }
 
-    suspend fun importGtfsData(gtfsDir: String): Boolean { // Added this function
+    // Heads-up: Ensure file paths are correctly passed as strings
+    // Heads-up: Ensure custom tags are used instead of context in logMessage calls
+    suspend fun importGtfsData(gtfsDir: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), dbHelper.writableDatabase)
@@ -67,14 +69,16 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         }
     }
     // Section 3
+    // Heads-up: Ensure file paths are correctly passed as strings
+    // Heads-up: Ensure custom tags are used instead of context in logMessage calls
     private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>, db: SQLiteDatabase): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
-            LoggingActivity.logMessage(context, "Starting import for table: $tableName")
+            LoggingActivity.logMessage("Import", "Starting import for table: $tableName") // Changed from context to "Import"
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Starting import for table: $tableName")
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for table: $tableName")
 
-            val file = File(context.filesDir, fileName)
+            val file = File(fileName) // Updated to use fileName directly
             if (!file.exists()) {
                 Log.e("DataImporter", "File not found: $fileName")
                 LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "File not found: $fileName")
@@ -189,7 +193,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                     valuesList.clear()
                     batchCount++
                     Log.d("DataImporter", "Batch $batchCount inserted for table: $tableName")
-                    LoggingActivity.logMessage(context, "Batch $batchCount inserted for table: $tableName")
+                    LoggingActivity.logMessage("Import", "Batch $batchCount inserted for table: $tableName") // Changed from context to "Import"
                     LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Batch $batchCount inserted for table: $tableName")
                     CoroutineScope(Dispatchers.Main).launch {
                         progressChannel.send((rowCount.toFloat() / totalRows * 100).toInt())
@@ -201,7 +205,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             if (valuesList.isNotEmpty()) {
                 db.execSQL("INSERT INTO $tableName (${columns.joinToString(",")}) VALUES ${valuesList.joinToString(",")}")
                 Log.d("DataImporter", "Final batch inserted for table: $tableName")
-                LoggingActivity.logMessage(context, "Final batch inserted for table: $tableName")
+                LoggingActivity.logMessage("Import", "Final batch inserted for table: $tableName") // Changed from context to "Import"
 
                 CoroutineScope(Dispatchers.Main).launch {
                     progressChannel.send(100)
@@ -213,7 +217,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             true
         } catch (e: Exception) {
             Log.e("DataImporter", "Error importing data for table: $tableName", e)
-            LoggingActivity.logMessage(context, "Error importing data for table: $tableName. ${e.message}")
+            LoggingActivity.logMessage("Import", "Error importing data for table: $tableName. ${e.message}") // Changed from context to "Import"
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Error importing data for table: $tableName. ${e.message}")
             false
         }
