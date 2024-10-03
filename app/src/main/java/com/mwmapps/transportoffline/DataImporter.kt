@@ -29,7 +29,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         var success = true
 
         // Add your table import logic here
-        success = importTableData("agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"))
+        success = importTableData("agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone"), db)
 
         if (success) {
             db.setTransactionSuccessful()
@@ -49,7 +49,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         return success
     }
     // Section 3
-    private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>): Boolean {
+    private suspend fun importTableData(fileName: String, tableName: String, columns: List<String>, db: SQLiteDatabase): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
             LoggingActivity.logMessage(context, "Starting import for table: $tableName")
