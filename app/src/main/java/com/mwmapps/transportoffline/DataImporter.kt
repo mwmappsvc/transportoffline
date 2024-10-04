@@ -1,13 +1,10 @@
+// Begin DataImporter.kt
 // Imports GTFS data into the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
 
-import kotlinx.coroutines.*
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -27,18 +24,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         var success = true
         db.beginTransaction()
         runBlocking {
-            val jobs = listOf(
-                async { success = success && importTableData("${context.filesDir.path}/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/feed_info.txt", "feed_info", listOf("feed_publisher_name", "feed_publisher_url", "feed_lang", "feed_start_date", "feed_end_date", "feed_version"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/shapes.txt", "shapes", listOf("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), db) },
-                async { success = success && importTableData("${context.filesDir.path}/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), db) }
-            )
-            jobs.awaitAll()
+            success = importGtfsData(context.filesDir.path + "/gtfs_data")
         }
         if (success) {
             db.setTransactionSuccessful()
@@ -64,16 +50,14 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             val db = dbHelper.writableDatabase
             db.beginTransaction() // Ensure transaction begins here
             try {
-                val jobs = listOf(
-                    async { importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), db) },
-                    async { importTableData("$gtfsDir/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), db) },
-                    async { importTableData("$gtfsDir/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), db) },
-                    async { importTableData("$gtfsDir/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), db) },
-                    async { importTableData("$gtfsDir/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), db) },
-                    async { importTableData("$gtfsDir/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), db) },
-                    async { importTableData("$gtfsDir/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), db) }
-                )
-                jobs.awaitAll()
+                // Perform import operations for each file
+                importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), db)
+                importTableData("$gtfsDir/routes.txt", "routes", listOf("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color"), db)
+                importTableData("$gtfsDir/trips.txt", "trips", listOf("trip_id", "route_id", "service_id", "trip_headsign", "direction_id", "block_id", "shape_id"), db)
+                importTableData("$gtfsDir/stops.txt", "stops", listOf("stop_id", "stop_code", "stop_name", "stop_desc", "stop_lat", "stop_lon", "zone_id", "stop_url", "location_type", "parent_station", "stop_timezone", "wheelchair_boarding"), db)
+                importTableData("$gtfsDir/calendar.txt", "calendar", listOf("service_id", "start_date", "end_date", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"), db)
+                importTableData("$gtfsDir/calendar_dates.txt", "calendar_dates", listOf("service_id", "date", "exception_type"), db)
+                importTableData("$gtfsDir/stop_times.txt", "stop_times", listOf("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence", "stop_headsign", "pickup_type", "drop_off_type", "shape_dist_traveled", "timepoint"), db)
                 db.setTransactionSuccessful()
                 true
             } catch (e: Exception) {
