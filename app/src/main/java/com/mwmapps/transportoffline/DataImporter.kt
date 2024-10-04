@@ -1,8 +1,8 @@
-// Being DataImporter.kt
 // Imports GTFS data into the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
 
+import kotlinx.coroutines.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -62,6 +62,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
     suspend fun importGtfsData(gtfsDir: String): Boolean {
         return withContext(Dispatchers.IO) {
             val db = dbHelper.writableDatabase
+            db.beginTransaction() // Ensure transaction begins here
             try {
                 val jobs = listOf(
                     async { importTableData("$gtfsDir/agency.txt", "agency", listOf("agency_id", "agency_name", "agency_url", "agency_timezone", "agency_lang"), db) },

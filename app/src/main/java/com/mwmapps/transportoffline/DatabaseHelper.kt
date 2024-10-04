@@ -1,9 +1,8 @@
-// Begin DatabaseHelper.kt
 // Manages database creation and version management.
 // Externally Referenced Classes: DatabaseUpdater, DataImporter, DataQuery
 package com.mwmapps.transportoffline
 
-import android.content.ContentValues // Add this import
+import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
