@@ -97,7 +97,11 @@ class UpdateDatabaseActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 Log.d("UpdateDatabaseActivity", "Update process completed with result: $updateSuccess")
                 if (updateSuccess) {
-                    notifyUserUpdateComplete()
+                    if (databaseUpdater.updateStage.value == UpdateStage.NoUpdateNeeded) {
+                        notifyUserNoUpdateNeeded()
+                    } else {
+                        notifyUserUpdateComplete()
+                    }
                 } else {
                     notifyUserDownloadFailed()
                 }
@@ -133,11 +137,13 @@ class UpdateDatabaseActivity : AppCompatActivity() {
     }
 
     private fun notifyUserNoUpdateNeeded() {
+        Log.d("UpdateDatabaseActivity", "notifyUserNoUpdateNeeded called")
         currentTaskDescription.text = "No update needed."
         startUpdateButton.text = "Bus Schedules"
         startUpdateButton.isEnabled = true
         progressBar.visibility = View.GONE
         forceUpdateButton.visibility = View.VISIBLE
+        Log.d("UpdateDatabaseActivity", "Force Update button visibility: ${forceUpdateButton.visibility}")
     }
 
     private fun notifyUserUpdateComplete() {
@@ -197,4 +203,5 @@ class UpdateDatabaseActivity : AppCompatActivity() {
         }
     }
 }
+
 // End UpdateDatabaseActivity.kt

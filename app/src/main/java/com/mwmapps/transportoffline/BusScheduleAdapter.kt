@@ -4,7 +4,6 @@
 package com.mwmapps.transportoffline
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -50,9 +49,11 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (getItemViewType(position) == VIEW_TYPE_BUS_STOP) {
             val busStop = busStops[position]
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus stop: stopId=${busStop.stopId}, stopName=${busStop.stopName}")
             (holder as BusStopViewHolder).bind(busStop)
         } else {
             val busSchedule = busSchedules[position]
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus schedule: stopSequence=${busSchedule.stopSequence}, arrivalTime=${busSchedule.arrivalTime}")
             (holder as BusScheduleViewHolder).bind(busSchedule)
         }
     }

@@ -5,16 +5,17 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-// Section 2
+
 class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
 
     fun searchBusStops(query: String): List<BusStop> {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
-        val cursor = db.rawQuery("SELECT stop_id, stop_name FROM stops WHERE stop_name LIKE ? OR stop_code LIKE ?", arrayOf("%$query%", "%$query%"))
+        val cursor = db.rawQuery("SELECT stop_id, stop_name, stop_desc FROM stops WHERE stop_name LIKE ? OR stop_code LIKE ? OR stop_desc LIKE ?", arrayOf("%$query%", "%$query%", "%$query%"))
         val busStops = mutableListOf<BusStop>()
         while (cursor.moveToNext()) {
             val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
             val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Found bus stop: stopId=$stopId, stopName=$stopName")
             busStops.add(BusStop(stopId, stopName))
         }
         cursor.close()
@@ -23,17 +24,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
 
     fun getBusSchedules(stopId: String): List<BusSchedule> {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Querying bus schedules for stop_id: $stopId")
-        val cursor = db.rawQuery("""
-            SELECT 
-                stop_sequence, 
-                arrival_time 
-            FROM 
-                stop_times 
-            WHERE 
-                stop_id = ? 
-            ORDER BY 
-                arrival_time
-        """, arrayOf(stopId))
+        val cursor = db.rawQuery("SELECT stop_sequence, arrival_time FROM stop_times WHERE stop_id = ?", arrayOf(stopId))
 
         val busSchedules = mutableListOf<BusSchedule>()
         while (cursor.moveToNext()) {
