@@ -23,19 +23,30 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
     }
 
     fun getBusSchedules(stopId: String): List<BusSchedule> {
-        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Querying bus schedules for stop_id: $stopId")
-        val cursor = db.rawQuery("SELECT stop_sequence, arrival_time FROM stop_times WHERE stop_id = ?", arrayOf(stopId))
+        val cursor = db.rawQuery("""
+        SELECT 
+            stop_times.arrival_time,
+            trips.route_id,
+            trips.trip_headsign
+        FROM stop_times
+        INNER JOIN trips ON stop_times.trip_id = trips.trip_id
+        WHERE stop_times.stop_id = ?
+        AND stop_times.arrival_time >= strftime('%H:%M:%S', 'now', 'localtime')
+        ORDER BY stop_times.arrival_time
+    """, arrayOf(stopId))
 
         val busSchedules = mutableListOf<BusSchedule>()
         while (cursor.moveToNext()) {
-            val stopSequence = cursor.getInt(cursor.getColumnIndexOrThrow("stop_sequence"))
             val arrivalTime = cursor.getString(cursor.getColumnIndexOrThrow("arrival_time"))
+            val routeId = cursor.getString(cursor.getColumnIndexOrThrow("route_id"))
+            val tripHeadsign = cursor.getString(cursor.getColumnIndexOrThrow("trip_headsign"))
 
-            busSchedules.add(BusSchedule(stopSequence, arrivalTime, "", "", ""))
+            busSchedules.add(BusSchedule(arrivalTime, routeId, tripHeadsign))
         }
         cursor.close()
         return busSchedules
     }
+
 
     fun logStopTimesForStopId(stopId: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging stop_times for stop_id: $stopId")

@@ -53,7 +53,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
             (holder as BusStopViewHolder).bind(busStop)
         } else {
             val busSchedule = busSchedules[position]
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus schedule: stopSequence=${busSchedule.stopSequence}, arrivalTime=${busSchedule.arrivalTime}")
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus schedule: arrivalTime=${busSchedule.arrivalTime}, routeId=${busSchedule.routeId}, tripHeadsign=${busSchedule.tripHeadsign}")
             (holder as BusScheduleViewHolder).bind(busSchedule)
         }
     }
@@ -75,19 +75,17 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
     }
 
     class BusScheduleViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val stopSequenceTextView: TextView = itemView.findViewById(R.id.stop_sequence)
         private val arrivalTimeTextView: TextView = itemView.findViewById(R.id.arrival_time)
         private val routeIdTextView: TextView = itemView.findViewById(R.id.route_id)
-        private val routeNameTextView: TextView = itemView.findViewById(R.id.route_name)
+        private val tripHeadsignTextView: TextView = itemView.findViewById(R.id.trip_headsign)
 
         fun bind(busSchedule: BusSchedule) {
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Binding bus schedule: ${busSchedule.stopSequence}, ${busSchedule.arrivalTime}, ${busSchedule.routeId}, ${busSchedule.routeShortName}, ${busSchedule.routeLongName}")
-            stopSequenceTextView.text = "Stop Sequence: ${busSchedule.stopSequence}"
             arrivalTimeTextView.text = "Arrival Time: ${busSchedule.arrivalTime}"
-            routeIdTextView.text = "Route ID: ${busSchedule.routeId}"
-            routeNameTextView.text = "Route: ${busSchedule.routeShortName} - ${busSchedule.routeLongName}"
+            routeIdTextView.text = "Bus Number: ${busSchedule.routeId}"
+            tripHeadsignTextView.text = "Destination: ${busSchedule.tripHeadsign}"
         }
     }
+
 
     companion object {
         private const val VIEW_TYPE_BUS_STOP = 0

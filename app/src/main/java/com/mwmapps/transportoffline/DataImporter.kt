@@ -103,18 +103,18 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                 // Map the values to the correct columns for each table
                 val mappedValues = when (tableName) {
                     "stops" -> listOf(
-                        values[10], // stop_id
-                        values[2],  // stop_code
-                        values[8],  // stop_name
-                        values[7],  // stop_desc
                         values[0],  // stop_lat
+                        values[1],  // wheelchair_boarding
+                        values[2],  // stop_code
                         values[3],  // stop_lon
-                        values[11], // zone_id
-                        values[5],  // stop_url
-                        values[9],  // location_type
-                        values[6],  // parent_station
                         values[4],  // stop_timezone
-                        values[1]   // wheelchair_boarding
+                        values[5],  // stop_url
+                        values[6],  // parent_station
+                        values[7],  // stop_desc
+                        values[8],  // stop_name
+                        values[9],  // location_type
+                        values[10], // stop_id
+                        values[11], // zone_id
                     )
                     "stop_times" -> listOf(
                         values[0],  // trip_id
@@ -129,24 +129,24 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                         if (values.size > 9) values[9] else null // timepoint
                     )
                     "trips" -> listOf(
-                        values[0],  // trip_id
+                        values[0],  // block_id
                         values[1],  // route_id
-                        values[2],  // service_id
+                        values[2],  // direction_id
                         values[3],  // trip_headsign
-                        values[4],  // direction_id
-                        values[5],  // block_id
-                        values[6]   // shape_id
+                        values[4],  // shape_id
+                        values[5],  // service_id
+                        values[6],  // trip_id
                     )
                     "routes" -> listOf(
-                        values[0],  // route_id
-                        values[1],  // agency_id
-                        values[2],  // route_short_name
-                        values[3],  // route_long_name
-                        values[4],  // route_desc
-                        values[5],  // route_type
+                        values[0],  // route_long_name
+                        values[1],  // route_type
+                        values[2],  // route_text_color
+                        values[3],  // route_color
+                        values[4],  // agency_id
+                        values[5],  // route_id
                         values[6],  // route_url
-                        values[7],  // route_color
-                        values[8]   // route_text_color
+                        values[7],  // route_desc
+                        values[8],  // route_short_name
                     )
                     "calendar" -> listOf(
                         values[0],  // service_id
