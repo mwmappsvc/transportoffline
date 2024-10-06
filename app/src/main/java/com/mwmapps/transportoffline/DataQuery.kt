@@ -5,6 +5,8 @@ package com.mwmapps.transportoffline
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
 
@@ -36,13 +38,17 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
     """, arrayOf(stopId))
 
         val busSchedules = mutableListOf<BusSchedule>()
-        while (cursor.moveToNext()) {
-            val arrivalTime = cursor.getString(cursor.getColumnIndexOrThrow("arrival_time"))
-            val routeId = cursor.getString(cursor.getColumnIndexOrThrow("route_id"))
-            val tripHeadsign = cursor.getString(cursor.getColumnIndexOrThrow("trip_headsign"))
+        val currentTime = LocalTime.now()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Found bus schedule: arrivalTime=$arrivalTime, routeId=$routeId, tripHeadsign=$tripHeadsign")
-            busSchedules.add(BusSchedule(arrivalTime, routeId, tripHeadsign))
+        while (cursor.moveToNext()) {
+            val arrivalTime = LocalTime.parse(cursor.getString(cursor.getColumnIndexOrThrow("arrival_time")), formatter)
+            if (arrivalTime.isAfter(currentTime)) {
+                val routeId = cursor.getString(cursor.getColumnIndexOrThrow("route_id"))
+                val tripHeadsign = cursor.getString(cursor.getColumnIndexOrThrow("trip_headsign"))
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Found bus schedule: arrivalTime=$arrivalTime, routeId=$routeId, tripHeadsign=$tripHeadsign")
+                busSchedules.add(BusSchedule(arrivalTime.toString(), routeId, tripHeadsign))
+            }
         }
         cursor.close()
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Total bus schedules found: ${busSchedules.size}")

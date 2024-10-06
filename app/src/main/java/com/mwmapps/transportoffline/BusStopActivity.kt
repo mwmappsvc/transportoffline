@@ -17,6 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 class BusStopActivity : AppCompatActivity() {
@@ -87,55 +89,37 @@ class BusStopActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Updating bus schedules in adapter, size: ${busSchedules.size}")
                 adapter.updateBusSchedules(busSchedules)
+                adapter.notifyDataSetChanged() // Notify adapter of data changes
             }
         }
     }
 
     private fun applyTimeFrameFilter(timeFrame: String) {
-        val currentTime = Calendar.getInstance()
-        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        dateFormat.timeZone = TimeZone.getDefault() // Ensure the date format uses the device's time zone
+        val currentTime = LocalTime.now()
+        val formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
 
-        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Current time: ${dateFormat.format(currentTime.time)}")
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Current time: ${currentTime.format(formatter)}")
 
         val filteredBusSchedules = adapter.getBusSchedules().filter { busSchedule ->
-            val arrivalTime = dateFormat.parse(busSchedule.arrivalTime)
-            val arrivalCalendar = Calendar.getInstance().apply { time = arrivalTime }
-            arrivalCalendar.timeZone = TimeZone.getDefault() // Ensure the arrival time uses the device's time zone
+            val arrivalTime = LocalTime.parse(busSchedule.arrivalTime, formatter)
 
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Arrival time: ${dateFormat.format(arrivalCalendar.time)}")
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Arrival time: ${arrivalTime.format(formatter)}")
 
-            val startTime = currentTime.clone() as Calendar
-            val endTime = currentTime.clone() as Calendar
-
-            when (timeFrame) {
-                "Next Hour" -> {
-                    startTime.add(Calendar.MINUTE, -15)
-                    endTime.add(Calendar.HOUR, 1)
-                    endTime.add(Calendar.MINUTE, 15)
-                }
-                "Next 2 Hours" -> {
-                    startTime.add(Calendar.MINUTE, -15)
-                    endTime.add(Calendar.HOUR, 2)
-                    endTime.add(Calendar.MINUTE, 15)
-                }
-                "Next 4 Hours" -> {
-                    startTime.add(Calendar.MINUTE, -15)
-                    endTime.add(Calendar.HOUR, 4)
-                    endTime.add(Calendar.MINUTE, 15)
-                }
-                else -> {
-                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Showing all schedules")
-                    return@filter true // Show all
-                }
+            val startTime = currentTime.minusMinutes(15)
+            val endTime = when (timeFrame) {
+                "Next Hour" -> currentTime.plusHours(1).plusMinutes(15)
+                "Next 2 Hours" -> currentTime.plusHours(2).plusMinutes(15)
+                "Next 4 Hours" -> currentTime.plusHours(4).plusMinutes(15)
+                else -> LocalTime.MAX
             }
 
-            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Start time: ${dateFormat.format(startTime.time)}, End time: ${dateFormat.format(endTime.time)}")
-            arrivalCalendar.after(startTime) && arrivalCalendar.before(endTime)
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Start time: ${startTime.format(formatter)}, End time: ${endTime.format(formatter)}")
+            arrivalTime.isAfter(startTime) && arrivalTime.isBefore(endTime)
         }
 
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Filtered bus schedules size: ${filteredBusSchedules.size}")
         adapter.updateBusSchedules(filteredBusSchedules)
+        adapter.notifyDataSetChanged() // Notify adapter of data changes
     }
 }
 // End BusStopActivity.kt

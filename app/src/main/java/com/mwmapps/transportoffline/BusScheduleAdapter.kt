@@ -30,7 +30,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         busStops.addAll(newBusStops)
         isDisplayingBusStops = true
         searchCriteria = criteria
-        notifyDataSetChanged()
+        notifyDataSetChanged() // Notify adapter of data changes
     }
 
     fun updateBusSchedules(newBusSchedules: List<BusSchedule>) {
@@ -38,7 +38,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         busSchedules.clear()
         busSchedules.addAll(newBusSchedules)
         isDisplayingBusStops = false
-        notifyDataSetChanged()
+        notifyDataSetChanged() // Notify adapter of data changes
     }
 
     fun getBusSchedules(): List<BusSchedule> {
