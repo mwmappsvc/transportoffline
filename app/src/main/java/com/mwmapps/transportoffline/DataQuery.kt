@@ -1,4 +1,4 @@
-// Begin DataQuery.kt
+// Begin DataQuery.kt (rev 1.0)
 // Provides methods to query the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl, BusStop, BusSchedule
 package com.mwmapps.transportoffline
@@ -8,9 +8,9 @@ import android.database.sqlite.SQLiteDatabase
 
 class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
 
-    fun searchBusStops(query: String): List<BusStop> {
-        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
-        val cursor = db.rawQuery("SELECT stop_id, stop_name, stop_desc FROM stops WHERE stop_name LIKE ? OR stop_code LIKE ? OR stop_desc LIKE ?", arrayOf("%$query%", "%$query%", "%$query%"))
+    fun searchBusStops(query: String, criteria: String): List<BusStop> {
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query and criteria: $criteria")
+        val cursor = db.rawQuery("SELECT stop_id, stop_name FROM stops WHERE $criteria LIKE ?", arrayOf("%$query%"))
         val busStops = mutableListOf<BusStop>()
         while (cursor.moveToNext()) {
             val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
@@ -23,6 +23,7 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
     }
 
     fun getBusSchedules(stopId: String): List<BusSchedule> {
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Fetching bus schedules for stopId: $stopId")
         val cursor = db.rawQuery("""
         SELECT 
             stop_times.arrival_time,
@@ -31,7 +32,6 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
         FROM stop_times
         INNER JOIN trips ON stop_times.trip_id = trips.trip_id
         WHERE stop_times.stop_id = ?
-        AND stop_times.arrival_time >= strftime('%H:%M:%S', 'now', 'localtime')
         ORDER BY stop_times.arrival_time
     """, arrayOf(stopId))
 
@@ -41,12 +41,35 @@ class DataQuery(private val db: SQLiteDatabase, private val context: Context) {
             val routeId = cursor.getString(cursor.getColumnIndexOrThrow("route_id"))
             val tripHeadsign = cursor.getString(cursor.getColumnIndexOrThrow("trip_headsign"))
 
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Found bus schedule: arrivalTime=$arrivalTime, routeId=$routeId, tripHeadsign=$tripHeadsign")
             busSchedules.add(BusSchedule(arrivalTime, routeId, tripHeadsign))
         }
         cursor.close()
+        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Total bus schedules found: ${busSchedules.size}")
         return busSchedules
     }
 
+    // Updated method to log the first row from each table
+    fun performTestQueries() {
+        val tables = listOf("stops", "stop_times", "trips", "routes", "shapes", "calendar", "calendar_dates")
+
+        for (table in tables) {
+            LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Querying first row from table: $table")
+            val cursor = db.rawQuery("SELECT * FROM $table LIMIT 1", null)
+            if (cursor.moveToFirst()) {
+                val columnNames = cursor.columnNames
+                val columnValues = columnNames.map { cursor.getString(cursor.getColumnIndexOrThrow(it)) }
+
+                // Log column names
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "$table - Columns: ${columnNames.joinToString(", ")}")
+                // Log column values
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "$table - Values: ${columnValues.joinToString(", ")}")
+            } else {
+                LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "No data found in table: $table")
+            }
+            cursor.close()
+        }
+    }
 
     fun logStopTimesForStopId(stopId: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_VERBOSE, "Logging stop_times for stop_id: $stopId")

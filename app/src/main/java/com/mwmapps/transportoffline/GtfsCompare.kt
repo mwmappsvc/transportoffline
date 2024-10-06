@@ -1,4 +1,4 @@
-// Begin GtfsCompare.kt
+// Begin GtfsCompare.kt (rev 1.0)
 // Compares GTFS data hashes to determine if new data is available.
 // Externally Referenced Classes: HashUtils, LoggingControl
 package com.mwmapps.transportoffline

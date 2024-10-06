@@ -1,4 +1,4 @@
-// Begin LoggingControl.kt
+// Begin LoggingControl.kt (rev 1.0)
 // Manages logging settings and logs messages.
 // Externally Referenced Classes: LoggingActivity
 package com.mwmapps.transportoffline
@@ -11,7 +11,8 @@ object LoggingControl {
     enum class LoggingGroup {
         IMPORT_SIMPLE, IMPORT_VERBOSE,
         DOWNLOAD_SIMPLE, EXTRACTOR_SIMPLE, COMPARE_SIMPLE,
-        QUERY_SIMPLE, QUERY_VERBOSE
+        QUERY_SIMPLE, QUERY_VERBOSE,
+        ERROR // Add this line
     }
 
     private lateinit var sharedPreferences: SharedPreferences

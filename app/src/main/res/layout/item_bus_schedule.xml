@@ -1,28 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Begin item_bus_schedule.xml -->
+<!-- Begin item_bus_schedule.xml (rev 1.0) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
-
-    <TextView
-        android:id="@+id/arrival_time"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp" />
+    android:padding="8dp">
 
     <TextView
         android:id="@+id/route_id"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:text="Bus Number" />
+
+    <TextView
+        android:id="@+id/arrival_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:text="Arrival Time" />
 
     <TextView
         android:id="@+id/trip_headsign"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp" />
-
+        android:textSize="14sp"
+        android:text="Destination" />
 </LinearLayout>
     <!-- End item_bus_schedule.xml -->

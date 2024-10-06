@@ -1,4 +1,4 @@
-// Begin HomeActivity.kt
+// Begin HomeActivity.kt (rev 1.0)
 // Associated layout file: activity_home.xml
 // Remains the primary screen for bus route searching and schedule viewing
 // Externally Referenced Classes: DatabaseHelper, HashUtils, DatabaseUtils, DataQuery, BusScheduleAdapter
@@ -13,6 +13,7 @@ import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -29,6 +30,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: BusScheduleAdapter
     private lateinit var dataQuery: DataQuery
+    private lateinit var searchCriteriaGroup: RadioGroup
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,9 +57,12 @@ class HomeActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = BusScheduleAdapter(this) { busStop ->
             LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
-            displayBusSchedules(busStop)
+            openBusStopActivity(busStop)
         }
         recyclerView.adapter = adapter
+
+        searchCriteriaGroup = findViewById<RadioGroup>(R.id.search_criteria_group)
+        searchCriteriaGroup.check(R.id.search_by_name) // Default selection
 
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
@@ -79,25 +84,36 @@ class HomeActivity : AppCompatActivity() {
             }
             false
         })
+
+        // Add the test queries and logging
+        testQueries()
     }
 
     private fun searchBusStops(query: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Searching for bus stops with query: $query")
         CoroutineScope(Dispatchers.IO).launch {
-            val busStops = dataQuery.searchBusStops(query)
+            val selectedCriteria = when (searchCriteriaGroup.checkedRadioButtonId) {
+                R.id.search_by_id -> "stop_id"
+                else -> "stop_name"
+            }
+            val busStops = dataQuery.searchBusStops(query, selectedCriteria)
             withContext(Dispatchers.Main) {
-                adapter.updateBusStops(busStops)
+                adapter.updateBusStops(busStops, selectedCriteria)
             }
         }
     }
 
-    private fun displayBusSchedules(busStop: BusStop) {
-        LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Displaying bus schedules for stop: ${busStop.stopId}")
+    private fun openBusStopActivity(busStop: BusStop) {
+        val intent = Intent(this, BusStopActivity::class.java).apply {
+            putExtra("stop_id", busStop.stopId)
+            putExtra("stop_name", busStop.stopName)
+        }
+        startActivity(intent)
+    }
+
+    private fun testQueries() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val busSchedules = dataQuery.getBusSchedules(busStop.stopId)
-            withContext(Dispatchers.Main) {
-                adapter.updateBusSchedules(busSchedules)
-            }
+            dataQuery.performTestQueries()
         }
     }
 }

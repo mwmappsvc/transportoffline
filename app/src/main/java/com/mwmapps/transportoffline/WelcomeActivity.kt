@@ -1,4 +1,4 @@
-// Begin WelcomeActivity.kt
+// Begin WelcomeActivity.kt (rev 1.0)
 // Associated layout file: activity_welcome.xml
 // Screen shown once at launch, initial setup
 // Externally Referenced Classes: Potentially checks for database updates or guides users to UpdateDatabaseActivity
@@ -18,9 +18,13 @@ class WelcomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "WelcomeActivity onCreate called")
 
-        // Copy the database from assets
         val dbHelper = DatabaseHelper(this)
-        dbHelper.copyDatabaseFromAssets()
+
+        // Check if the database already exists before copying
+        if (!dbHelper.isDatabaseCopied(this)) {
+            dbHelper.copyDatabaseFromAssets()
+            dbHelper.setImportComplete(true) // Mark the import as complete after copying
+        }
 
         // Log database path for debugging
         val db = dbHelper.readableDatabase
@@ -43,7 +47,24 @@ class WelcomeActivity : AppCompatActivity() {
             val isImportComplete = dbHelper.isImportComplete()
             Log.d("WelcomeActivity", "Database import complete flag: $isImportComplete")
             if (!isImportComplete) {
-                Log.e("WelcomeActivity", "Database import is incomplete. Aborting.")
+                Log.e("WelcomeActivity", "Database import is incomplete. Showing Welcome screen.")
+                setContentView(R.layout.activity_welcome)
+
+                val nextButton: Button = findViewById(R.id.next_button)
+                nextButton.setOnClickListener {
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Next button clicked")
+
+                    // Mark that the user has seen the Welcome screen
+                    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+                    editor.putBoolean("hasSeenWelcome", true)
+                    editor.apply()
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "hasSeenWelcome set to true")
+
+                    val intent = Intent(this, UpdateDatabaseActivity::class.java)
+                    startActivity(intent)
+                    finish() // Close the welcome activity
+                    LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Navigating to UpdateDatabaseActivity")
+                }
                 return
             }
 

@@ -1,4 +1,4 @@
-// Begin HashUtils.kt
+// Begin HashUtils.kt (rev 1.0)
 // Provides utility methods for calculating and storing hashes.
 // Externally Referenced Classes:
 package com.mwmapps.transportoffline

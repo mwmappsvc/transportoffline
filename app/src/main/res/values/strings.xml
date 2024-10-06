@@ -10,5 +10,9 @@
         <item>Next Hour</item>
         <item>Next 2 Hours</item>
         <item>Next 4 Hours</item>
+        <item>Show All</item>
     </string-array>
+    <!-- Add the new bus_stop_activity_label -->
+    <string name="bus_stop_activity_label">Bus Stop Details</string>
 </resources>
+    <!-- rev (1.0) -->

@@ -1,3 +1,4 @@
+// Begin DatabaseHelper.kt (rev 1.0)
 // Manages database creation and version management.
 // Externally Referenced Classes: DatabaseUpdater, DataImporter, DataQuery
 package com.mwmapps.transportoffline
@@ -50,6 +51,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     fun copyDatabaseFromAssets() {
+        Log.d("DatabaseHelper", "Copying database from assets")
         val dbDir = File(context.applicationInfo.dataDir + DATABASE_PATH)
         if (!dbDir.exists()) {
             dbDir.mkdirs()
@@ -67,6 +69,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         outputStream.flush()
         outputStream.close()
         inputStream.close()
+        Log.d("DatabaseHelper", "Database copy completed")
     }
 
     fun copyDatabase(context: Context): Boolean {
@@ -128,6 +131,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         val cursor = db.rawQuery("SELECT value FROM flags WHERE key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
         val isComplete = cursor.moveToFirst() && cursor.getInt(0) == 1
         cursor.close()
+        Log.d("DatabaseHelper", "Import complete status: $isComplete")
         return isComplete
     }
 

@@ -1,4 +1,4 @@
-// Begin BusStop.kt
+// Begin BusStop.kt (rev 1.0)
 // Data class representing a bus stop.
 // Externally Referenced Classes: BusScheduleAdapter, DataQuery
 package com.mwmapps.transportoffline

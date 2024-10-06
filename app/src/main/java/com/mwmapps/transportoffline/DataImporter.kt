@@ -1,4 +1,4 @@
-// Begin DataImporter.kt
+// Begin DataImporter.kt (rev 1.0)
 // Imports GTFS data into the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
@@ -129,13 +129,13 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                         if (values.size > 9) values[9] else null // timepoint
                     )
                     "trips" -> listOf(
-                        values[0],  // block_id
-                        values[1],  // route_id
-                        values[2],  // direction_id
+                        values[2],  // trip_id
+                        values[0],  // route_id
+                        values[1],  // service_id
                         values[3],  // trip_headsign
-                        values[4],  // shape_id
-                        values[5],  // service_id
-                        values[6],  // trip_id
+                        values[4],  // direction_id
+                        values[5],  // block_id
+                        values[6]   // shape_id
                     )
                     "routes" -> listOf(
                         values[0],  // route_long_name

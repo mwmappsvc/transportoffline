@@ -1,4 +1,4 @@
-// Begin UpdateDatabaseActivity.kt
+// Begin UpdateDatabaseActivity.kt (rev 1.0)
 // Associated layout file: activity_update_database.xml
 // Manages the database update process.
 // Externally Referenced Classes: DatabaseHelper, DatabaseUpdater, GtfsCompare, HomeActivity, SettingsActivity

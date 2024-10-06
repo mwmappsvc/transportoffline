@@ -1,4 +1,4 @@
-// Begin ConfigureLoggingActivity.kt
+// Begin ConfigureLoggingActivity.kt (rev 1.0)
 // Associated layout file: activity_configure_logging.xml
 // Manages logging configuration.
 // Externally Referenced Classes: LoggingControl

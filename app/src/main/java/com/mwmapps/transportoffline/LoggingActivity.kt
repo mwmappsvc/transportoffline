@@ -1,4 +1,4 @@
-// Begin LoggingActivity.kt
+// Begin LoggingActivity.kt (rev 1.0)
 // Associated layout file: activity_logging.xml
 // Displays log information.
 // Externally Referenced Classes:

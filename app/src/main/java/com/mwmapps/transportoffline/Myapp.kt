@@ -1,4 +1,4 @@
-// Begin Myapp.kt
+// Begin Myapp.kt (rev 1.0)
 // Application class for initializing global settings.
 // Externally Referenced Classes: LoggingControl
 

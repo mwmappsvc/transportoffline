@@ -1,4 +1,4 @@
-// Begin GtfsDownloader.kt
+// Begin GtfsDownloader.kt (rev 1.0)
 // Downloads GTFS data.
 // Externally Referenced Classes: LoggingControl
 package com.mwmapps.transportoffline

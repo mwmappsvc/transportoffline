@@ -1,4 +1,4 @@
-// Begin BusScheduleAdapter.kt
+// Begin BusScheduleAdapter.kt (rev 1.0)
 // Adapter for displaying bus schedules and stops in a RecyclerView.
 // Externally Referenced Classes: BusStop, BusSchedule, LoggingControl
 package com.mwmapps.transportoffline
@@ -9,22 +9,27 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class BusScheduleAdapter(private val context: Context, private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val busStops = mutableListOf<BusStop>()
     private val busSchedules = mutableListOf<BusSchedule>()
     private var isDisplayingBusStops = true
+    private var searchCriteria: String = "stop_name"
 
     override fun getItemViewType(position: Int): Int {
         return if (isDisplayingBusStops) VIEW_TYPE_BUS_STOP else VIEW_TYPE_BUS_SCHEDULE
     }
 
-    fun updateBusStops(newBusStops: List<BusStop>) {
+    fun updateBusStops(newBusStops: List<BusStop>, criteria: String) {
         LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Updating bus stops in adapter")
         busStops.clear()
         busStops.addAll(newBusStops)
         isDisplayingBusStops = true
+        searchCriteria = criteria
         notifyDataSetChanged()
     }
 
@@ -36,10 +41,14 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         notifyDataSetChanged()
     }
 
+    fun getBusSchedules(): List<BusSchedule> {
+        return busSchedules
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return if (viewType == VIEW_TYPE_BUS_STOP) {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_stop, parent, false)
-            BusStopViewHolder(view, onBusStopClick)
+            BusStopViewHolder(view, onBusStopClick, searchCriteria)
         } else {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_bus_schedule, parent, false)
             BusScheduleViewHolder(view)
@@ -50,7 +59,7 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         if (getItemViewType(position) == VIEW_TYPE_BUS_STOP) {
             val busStop = busStops[position]
             LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus stop: stopId=${busStop.stopId}, stopName=${busStop.stopName}")
-            (holder as BusStopViewHolder).bind(busStop)
+            (holder as BusStopViewHolder).bind(busStop, searchCriteria)
         } else {
             val busSchedule = busSchedules[position]
             LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Binding bus schedule: arrivalTime=${busSchedule.arrivalTime}, routeId=${busSchedule.routeId}, tripHeadsign=${busSchedule.tripHeadsign}")
@@ -62,11 +71,11 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         return if (isDisplayingBusStops) busStops.size else busSchedules.size
     }
 
-    class BusStopViewHolder(itemView: View, private val onBusStopClick: (BusStop) -> Unit) : RecyclerView.ViewHolder(itemView) {
+    class BusStopViewHolder(itemView: View, private val onBusStopClick: (BusStop) -> Unit, private val criteria: String) : RecyclerView.ViewHolder(itemView) {
         private val stopNameTextView: TextView = itemView.findViewById(R.id.stop_name)
 
-        fun bind(busStop: BusStop) {
-            stopNameTextView.text = busStop.stopName
+        fun bind(busStop: BusStop, criteria: String) {
+            stopNameTextView.text = if (criteria == "stop_id") busStop.stopId else busStop.stopName
             itemView.setOnClickListener {
                 LoggingControl.log(LoggingControl.LoggingGroup.QUERY_SIMPLE, "Bus stop clicked: ${busStop.stopId}")
                 onBusStopClick(busStop)
@@ -80,12 +89,21 @@ class BusScheduleAdapter(private val context: Context, private val onBusStopClic
         private val tripHeadsignTextView: TextView = itemView.findViewById(R.id.trip_headsign)
 
         fun bind(busSchedule: BusSchedule) {
-            arrivalTimeTextView.text = "Arrival Time: ${busSchedule.arrivalTime}"
-            routeIdTextView.text = "Bus Number: ${busSchedule.routeId}"
-            tripHeadsignTextView.text = "Destination: ${busSchedule.tripHeadsign}"
+            val inputDateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            val outputDateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            try {
+                val arrivalTime = inputDateFormat.parse(busSchedule.arrivalTime)
+                val formattedArrivalTime = outputDateFormat.format(arrivalTime)
+
+                routeIdTextView.text = "Bus Number: ${busSchedule.routeId}"
+                arrivalTimeTextView.text = "Arrival Time: $formattedArrivalTime"
+                tripHeadsignTextView.text = "Destination: ${busSchedule.tripHeadsign}"
+            } catch (e: ParseException) {
+                LoggingControl.log(LoggingControl.LoggingGroup.ERROR, "Failed to parse arrival time: ${busSchedule.arrivalTime}")
+                arrivalTimeTextView.text = "Arrival Time: Invalid"
+            }
         }
     }
-
 
     companion object {
         private const val VIEW_TYPE_BUS_STOP = 0

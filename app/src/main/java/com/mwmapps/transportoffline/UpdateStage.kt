@@ -1,4 +1,4 @@
-// Begin UpdateStage.kt
+// Begin UpdateStage.kt (rev 1.0)
 // Enum class representing the different stages of the database update process.
 // Externally Referenced Classes:
 package com.mwmapps.transportoffline

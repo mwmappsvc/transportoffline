@@ -1,4 +1,4 @@
-// Begin GtfsExtractor.kt
+// Begin GtfsExtractor.kt (rev 1.0)
 // Extracts GTFS data from a zip file.
 // Externally Referenced Classes: LoggingControl
 package com.mwmapps.transportoffline

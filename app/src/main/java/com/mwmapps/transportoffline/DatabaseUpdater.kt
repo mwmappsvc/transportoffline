@@ -1,4 +1,4 @@
-// Begin DatabaseUpdater.kt
+// Begin DatabaseUpdater.kt (rev 1.0)
 // Handles the database update process.
 // Externally Referenced Classes: DatabaseHelper, GtfsDownloader, GtfsExtractor, GtfsCompare, DataImporter, HashUtils
 package com.mwmapps.transportoffline

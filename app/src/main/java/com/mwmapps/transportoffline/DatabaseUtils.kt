@@ -1,4 +1,4 @@
-// Begin DatabaseUtils.kt
+// Begin DatabaseUtils.kt (rev 1.0)
 // Provides utility methods for database operations.
 // Externally Referenced Classes: DatabaseHelper
 package com.mwmapps.transportoffline

@@ -1,4 +1,4 @@
-// Begin SettingsActivity.kt
+// Begin SettingsActivity.kt (rev 1.0)
 // Associated layout file: activity_settings.xml
 // Manages app settings.
 // Externally Referenced Classes: UpdateDatabaseActivity, LoggingActivity, ConfigureLoggingActivity
