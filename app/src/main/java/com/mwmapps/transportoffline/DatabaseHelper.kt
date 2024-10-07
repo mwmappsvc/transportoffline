@@ -1,9 +1,8 @@
-// Begin DatabaseHelper.kt (rev 1.0)
+// Begin DatabaseHelper.kt (rev 1.1)
 // Manages database creation and version management.
 // Externally Referenced Classes: DatabaseUpdater, DataImporter, DataQuery
 package com.mwmapps.transportoffline
 
-import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
@@ -20,7 +19,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         private const val DATABASE_NAME = "bus_schedule.db"
         private const val DATABASE_VERSION = 2 // Increment this if you make schema changes
         private const val DATABASE_PATH = "/databases/"
-        private const val IMPORT_COMPLETE_FLAG = "import_complete"
     }
 
     private val dbPath: String = context.applicationInfo.dataDir + DATABASE_PATH + DATABASE_NAME
@@ -28,7 +26,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     init {
         if (!checkDatabase()) {
             copyDatabaseFromAssets()
-            setImportComplete(false)
         }
     }
 
@@ -41,7 +38,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         if (oldVersion < newVersion) {
             context.deleteDatabase(DATABASE_NAME)
             copyDatabaseFromAssets()
-            setImportComplete(false)
         }
     }
 
@@ -124,25 +120,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READWRITE)
         }
         return db
-    }
-
-    fun isImportComplete(): Boolean {
-        val db = writableDatabase // Ensure the database is opened in writable mode
-        val cursor = db.rawQuery("SELECT value FROM flags WHERE key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
-        val isComplete = cursor.moveToFirst() && cursor.getInt(0) == 1
-        cursor.close()
-        Log.d("DatabaseHelper", "Import complete status: $isComplete")
-        return isComplete
-    }
-
-    fun setImportComplete(complete: Boolean) {
-        val db = writableDatabase
-        val values = ContentValues().apply {
-            put("value", if (complete) 1 else 0)
-        }
-        db.update("flags", values, "key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
-        Log.d("DatabaseHelper", "Import flag set to ${if (complete) "true" else "false"}")
-        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to ${if (complete) "true" else "false"}")
     }
 }
 // End DatabaseHelper.kt

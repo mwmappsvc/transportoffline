@@ -1,4 +1,4 @@
-// Begin DataImporter.kt (rev 1.1)
+// Begin DataImporter.kt (rev 1.4)
 // Imports GTFS data into the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
@@ -23,7 +23,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         val db = dbHelper.writableDatabase
         var success = true
         db.beginTransaction()
-        dbHelper.setImportComplete(false) // Set the import flag to false at the start
+        setImportCompleteFlag(false) // Set the import flag to false at the start
         Log.d("DataImporter", "Import flag set to false at the start of importData")
         LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to false at the start of importData")
         try {
@@ -32,30 +32,30 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             }
             if (success) {
                 db.setTransactionSuccessful()
-                dbHelper.setImportComplete(true) // Set the import flag to true after successful import
-                val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
-                sharedPreferences.edit().putBoolean("import_flag", true).apply()
+                setImportCompleteFlag(true) // Set the import flag to true after successful import
                 Log.d("DataImporter", "Import flag set to true after successful import")
                 LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to true after successful import")
-                LoggingActivity.logMessage("Import", "All tables imported successfully")
-                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "All tables imported successfully")
-                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for all tables")
-
-                // Log the specific stop number 16709
-                logSpecificStop(16709, db)
             } else {
-                dbHelper.setImportComplete(false)
+                setImportCompleteFlag(false)
                 Log.d("DataImporter", "Import flag remains false due to import failure")
                 LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag remains false due to import failure")
             }
         } catch (e: Exception) {
-            dbHelper.setImportComplete(false)
+            setImportCompleteFlag(false)
             Log.e("DataImporter", "Import error: ${e.message}")
+            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import error: ${e.message}")
         } finally {
             db.endTransaction()
             db.close() // Ensure the database is closed
         }
         return success
+    }
+
+    private fun setImportCompleteFlag(complete: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("import_flag", complete).apply()
+        Log.d("DataImporter", "Import flag set to ${if (complete) "true" else "false"} in SharedPreferences")
+        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to ${if (complete) "true" else "false"} in SharedPreferences")
     }
 
     suspend fun importGtfsData(gtfsDir: String): Boolean {
@@ -75,6 +75,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                 true
             } catch (e: Exception) {
                 Log.e("DataImporter", "Error importing GTFS data", e)
+                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Error importing GTFS data: ${e.message}")
                 false
             } finally {
                 db.endTransaction()
@@ -209,6 +210,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         } catch (e: Exception) {
             Log.e("DataImporter", "Error importing data for table: $tableName", e)
             LoggingActivity.logMessage("Import", "Error importing data for table: $tableName: ${e.message}")
+            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Error importing data for table: $tableName: ${e.message}")
             false
         }
     }

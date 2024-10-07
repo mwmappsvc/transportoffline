@@ -1,4 +1,4 @@
-// Begin DatabaseUtils.kt (rev 1.0)
+// Begin DatabaseUtils.kt (rev 1.1)
 // Provides utility methods for database operations.
 // Externally Referenced Classes: DatabaseHelper
 package com.mwmapps.transportoffline
@@ -6,20 +6,20 @@ package com.mwmapps.transportoffline
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabaseLockedException
+import android.util.Log
 
 object DatabaseUtils {
     fun initializeDatabase(context: Context): Boolean {
         val dbHelper = DatabaseHelper(context)
         if (!dbHelper.isDatabaseCopied(context)) {
             dbHelper.copyDatabaseFromAssets()
-            dbHelper.setImportComplete(false)
+            setImportCompleteFlag(context, false)
         }
-        return dbHelper.isImportComplete()
+        return isImportComplete(context)
     }
 
     fun checkImportComplete(context: Context): Boolean {
-        val dbHelper = DatabaseHelper(context)
-        return dbHelper.isImportComplete()
+        return isImportComplete(context)
     }
 
     fun getDatabaseWithRetry(context: Context): SQLiteDatabase {
@@ -42,6 +42,19 @@ object DatabaseUtils {
         }
 
         return db
+    }
+
+    private fun setImportCompleteFlag(context: Context, complete: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("import_flag", complete).apply()
+        Log.d("DatabaseUtils", "Import flag set to ${if (complete) "true" else "false"} in SharedPreferences")
+    }
+
+    private fun isImportComplete(context: Context): Boolean {
+        val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
+        val isComplete = sharedPreferences.getBoolean("import_flag", false)
+        Log.d("DatabaseUtils", "Import complete status: $isComplete")
+        return isComplete
     }
 }
 // End DatabaseUtils.kt
