@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
+import androidx.compose.ui.graphics.vector.path
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -76,7 +77,8 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             } catch (e: Exception) {
                 Log.e("DataImporter", "Error importing GTFS data", e)
                 LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Error importing GTFS data: ${e.message}")
-                false
+                setImportCompleteFlag(false) // Set the import flag to false on error
+                false // Return false to indicate import failure
             } finally {
                 db.endTransaction()
                 db.close() // Ensure the database is closed
