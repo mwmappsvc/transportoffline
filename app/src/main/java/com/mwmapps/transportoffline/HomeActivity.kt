@@ -36,7 +36,7 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        if (!DatabaseUtils.checkImportComplete(this)) {
+        if (!ImportStatusManager(this).isImportComplete()) {
             val intent = Intent(this, WelcomeActivity::class.java)
             startActivity(intent)
             finish()

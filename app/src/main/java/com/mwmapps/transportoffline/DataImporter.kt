@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
-import androidx.compose.ui.graphics.vector.path
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -24,39 +23,28 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         val db = dbHelper.writableDatabase
         var success = true
         db.beginTransaction()
-        setImportCompleteFlag(false) // Set the import flag to false at the start
+        ImportStatusManager(context).setImportComplete(false) // Set the import flag to false at the start
         Log.d("DataImporter", "Import flag set to false at the start of importData")
-        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to false at the start of importData")
         try {
             runBlocking {
                 success = importGtfsData(context.filesDir.path + "/gtfs_data")
             }
             if (success) {
                 db.setTransactionSuccessful()
-                setImportCompleteFlag(true) // Set the import flag to true after successful import
+                ImportStatusManager(context).setImportComplete(true) // Set the import flag to true after successful import
                 Log.d("DataImporter", "Import flag set to true after successful import")
-                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to true after successful import")
             } else {
-                setImportCompleteFlag(false)
+                ImportStatusManager(context).setImportComplete(false)
                 Log.d("DataImporter", "Import flag remains false due to import failure")
-                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag remains false due to import failure")
             }
         } catch (e: Exception) {
-            setImportCompleteFlag(false)
+            ImportStatusManager(context).setImportComplete(false)
             Log.e("DataImporter", "Import error: ${e.message}")
-            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import error: ${e.message}")
         } finally {
             db.endTransaction()
             db.close() // Ensure the database is closed
         }
         return success
-    }
-
-    private fun setImportCompleteFlag(complete: Boolean) {
-        val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putBoolean("import_flag", complete).apply()
-        Log.d("DataImporter", "Import flag set to ${if (complete) "true" else "false"} in SharedPreferences")
-        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to ${if (complete) "true" else "false"} in SharedPreferences")
     }
 
     suspend fun importGtfsData(gtfsDir: String): Boolean {
@@ -76,8 +64,7 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                 true
             } catch (e: Exception) {
                 Log.e("DataImporter", "Error importing GTFS data", e)
-                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Error importing GTFS data: ${e.message}")
-                setImportCompleteFlag(false) // Set the import flag to false on error
+                ImportStatusManager(context).setImportComplete(false) // Set the import flag to false on error
                 false // Return false to indicate import failure
             } finally {
                 db.endTransaction()
@@ -85,7 +72,6 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             }
         }
     }
-
     private fun importTableData(fileName: String, tableName: String, columns: List<String>, db: SQLiteDatabase): Boolean {
         return try {
             Log.d("DataImporter", "Starting import for table: $tableName")
