@@ -1,4 +1,4 @@
-// Begin DataImporter.kt (rev 1.0)
+// Begin DataImporter.kt (rev 1.1)
 // Imports GTFS data into the database.
 // Externally Referenced Classes: DatabaseHelper, LoggingControl
 package com.mwmapps.transportoffline
@@ -23,13 +23,19 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         val db = dbHelper.writableDatabase
         var success = true
         db.beginTransaction()
+        dbHelper.setImportComplete(false) // Set the import flag to false at the start
+        Log.d("DataImporter", "Import flag set to false at the start of importData")
+        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to false at the start of importData")
         runBlocking {
             success = importGtfsData(context.filesDir.path + "/gtfs_data")
         }
         if (success) {
             db.setTransactionSuccessful()
-            dbHelper.setImportComplete(true)
-            Log.d("DataImporter", "All tables imported successfully")
+            dbHelper.setImportComplete(true) // Set the import flag to true after successful import
+            val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
+            sharedPreferences.edit().putBoolean("import_flag", true).apply()
+            Log.d("DataImporter", "Import flag set to true after successful import")
+            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to true after successful import")
             LoggingActivity.logMessage("Import", "All tables imported successfully")
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "All tables imported successfully")
             LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for all tables")
@@ -38,6 +44,8 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
             logSpecificStop(16709, db)
         } else {
             dbHelper.setImportComplete(false)
+            Log.d("DataImporter", "Import flag remains false due to import failure")
+            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag remains false due to import failure")
         }
         db.endTransaction()
         db.close() // Ensure the database is closed
@@ -174,57 +182,42 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
                     )
                     else -> values
                 }
-                valuesList.add("('${mappedValues.joinToString("','")}')")
-                rowCount++
-                batchCount++
 
-                if (batchCount >= BATCH_SIZE) {
-                    sql.append(valuesList.joinToString(","))
-                    db.execSQL(sql.toString())
+                valuesList.add("(${mappedValues.joinToString(",") { "'$it'" }})")
+                rowCount++
+
+                if (rowCount % BATCH_SIZE == 0) {
+                    db.execSQL("$sql ${valuesList.joinToString(",")}")
                     valuesList.clear()
-                    sql.clear().append("INSERT OR REPLACE INTO $tableName (${columns.joinToString(",")}) VALUES ")
-                    batchCount = 0
+                    batchCount++
+                    Log.d("DataImporter", "Batch $batchCount inserted for table: $tableName")
                 }
             }
 
             if (valuesList.isNotEmpty()) {
-                sql.append(valuesList.joinToString(","))
-                db.execSQL(sql.toString())
+                db.execSQL("$sql ${valuesList.joinToString(",")}")
+                Log.d("DataImporter", "Final batch inserted for table: $tableName")
             }
 
             reader.close()
-            Log.d("DataImporter", "Imported $rowCount rows into $tableName")
-            LoggingActivity.logMessage("Import", "Imported $rowCount rows into $tableName")
             true
         } catch (e: Exception) {
-            Log.e("DataImporter", "Error importing data into $tableName", e)
-            LoggingActivity.logMessage("Import", "Error importing data into $tableName: ${e.message}")
+            Log.e("DataImporter", "Error importing data for table: $tableName", e)
+            LoggingActivity.logMessage("Import", "Error importing data for table: $tableName: ${e.message}")
             false
         }
     }
 
-    private fun logSpecificStop(stopNumber: Int, db: SQLiteDatabase) {
-        val cursor = db.rawQuery("SELECT * FROM stops WHERE stop_id = ?", arrayOf(stopNumber.toString()))
+    private fun logSpecificStop(stopId: Int, db: SQLiteDatabase) {
+        val cursor = db.rawQuery("SELECT * FROM stops WHERE stop_id = ?", arrayOf(stopId.toString()))
         if (cursor.moveToFirst()) {
-            do {
-                val stopId = cursor.getString(cursor.getColumnIndexOrThrow("stop_id"))
-                val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
-                Log.d("DataImporter", "Stop ID: $stopId, Stop Name: $stopName")
-            } while (cursor.moveToNext())
+            val stopName = cursor.getString(cursor.getColumnIndexOrThrow("stop_name"))
+            val stopLat = cursor.getDouble(cursor.getColumnIndexOrThrow("stop_lat"))
+            val stopLon = cursor.getDouble(cursor.getColumnIndexOrThrow("stop_lon"))
+            Log.d("DataImporter", "Stop ID: $stopId, Name: $stopName, Latitude: $stopLat, Longitude: $stopLon")
+            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Stop ID: $stopId, Name: $stopName, Latitude: $stopLat, Longitude: $stopLon")
         }
         cursor.close()
-    }
-
-    private fun logAllStopIds(db: SQLiteDatabase) {
-        val cursor = db.rawQuery("SELECT stop_id FROM stops", null)
-        val stopIds = mutableListOf<String>()
-        if (cursor.moveToFirst()) {
-            do {
-                stopIds.add(cursor.getString(cursor.getColumnIndexOrThrow("stop_id")))
-            } while (cursor.moveToNext())
-        }
-        cursor.close()
-        Log.d("DataImporter", "All stop IDs: ${stopIds.joinToString(", ")}")
     }
 }
 // End DataImporter.kt

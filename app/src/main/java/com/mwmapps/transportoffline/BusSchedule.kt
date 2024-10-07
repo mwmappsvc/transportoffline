@@ -4,8 +4,8 @@
 package com.mwmapps.transportoffline
 
 data class BusSchedule(
-    val arrivalTime: String,
     val routeId: String,
+    val arrivalTime: String,
     val tripHeadsign: String
 )
 // End BusSchedule.kt

@@ -1,4 +1,4 @@
-// Begin LoggingControl.kt (rev 1.0)
+// Begin LoggingControl.kt (rev 1.1)
 // Manages logging settings and logs messages.
 // Externally Referenced Classes: LoggingActivity
 package com.mwmapps.transportoffline

@@ -1,4 +1,4 @@
-// Begin LoggingActivity.kt (rev 1.0)
+// Begin LoggingActivity.kt (rev 1.1)
 // Associated layout file: activity_logging.xml
 // Displays log information.
 // Externally Referenced Classes:
@@ -10,12 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 
 class LoggingActivity : AppCompatActivity() {
     companion object {
-        private lateinit var logTextView: TextView
+        private var logTextView: TextView? = null
 
         fun logMessage(tag: String, message: String) {
-            if (::logTextView.isInitialized) {
-                logTextView.append("$tag: $message\n")
-            }
+            logTextView?.append("$tag: $message\n")
         }
     }
 

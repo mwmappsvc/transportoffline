@@ -127,7 +127,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     fun isImportComplete(): Boolean {
-        val db = readableDatabase
+        val db = writableDatabase // Ensure the database is opened in writable mode
         val cursor = db.rawQuery("SELECT value FROM flags WHERE key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
         val isComplete = cursor.moveToFirst() && cursor.getInt(0) == 1
         cursor.close()
@@ -141,6 +141,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             put("value", if (complete) 1 else 0)
         }
         db.update("flags", values, "key = ?", arrayOf(IMPORT_COMPLETE_FLAG))
+        Log.d("DatabaseHelper", "Import flag set to ${if (complete) "true" else "false"}")
+        LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to ${if (complete) "true" else "false"}")
     }
 }
 // End DatabaseHelper.kt

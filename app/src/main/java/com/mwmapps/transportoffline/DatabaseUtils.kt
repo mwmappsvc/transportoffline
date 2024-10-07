@@ -8,6 +8,20 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteDatabaseLockedException
 
 object DatabaseUtils {
+    fun initializeDatabase(context: Context): Boolean {
+        val dbHelper = DatabaseHelper(context)
+        if (!dbHelper.isDatabaseCopied(context)) {
+            dbHelper.copyDatabaseFromAssets()
+            dbHelper.setImportComplete(false)
+        }
+        return dbHelper.isImportComplete()
+    }
+
+    fun checkImportComplete(context: Context): Boolean {
+        val dbHelper = DatabaseHelper(context)
+        return dbHelper.isImportComplete()
+    }
+
     fun getDatabaseWithRetry(context: Context): SQLiteDatabase {
         val dbHelper = DatabaseHelper(context)
         var db: SQLiteDatabase? = null
@@ -16,7 +30,7 @@ object DatabaseUtils {
 
         while (db == null && attempts < maxAttempts) {
             try {
-                db = dbHelper.readableDatabase
+                db = dbHelper.writableDatabase // Ensure the database is opened in writable mode
             } catch (e: SQLiteDatabaseLockedException) {
                 attempts++
                 Thread.sleep(100) // Wait for 100ms before retrying

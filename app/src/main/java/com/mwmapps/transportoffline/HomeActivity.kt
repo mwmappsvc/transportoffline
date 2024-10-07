@@ -36,15 +36,14 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        val dbHelper = DatabaseHelper(this)
-        if (!dbHelper.isImportComplete()) {
+        if (!DatabaseUtils.checkImportComplete(this)) {
             val intent = Intent(this, WelcomeActivity::class.java)
             startActivity(intent)
             finish()
             return
         }
 
-        dataQuery = DataQuery(dbHelper.writableDatabase, this)
+        dataQuery = DataQuery(DatabaseUtils.getDatabaseWithRetry(this), this)
 
         val settingsIcon: ImageView = findViewById(R.id.settings_icon)
         settingsIcon.setOnClickListener {
