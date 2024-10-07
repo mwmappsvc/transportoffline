@@ -26,30 +26,35 @@ class DataImporter(private val context: Context, private val dbHelper: DatabaseH
         dbHelper.setImportComplete(false) // Set the import flag to false at the start
         Log.d("DataImporter", "Import flag set to false at the start of importData")
         LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to false at the start of importData")
-        runBlocking {
-            success = importGtfsData(context.filesDir.path + "/gtfs_data")
-        }
-        if (success) {
-            db.setTransactionSuccessful()
-            dbHelper.setImportComplete(true) // Set the import flag to true after successful import
-            val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
-            sharedPreferences.edit().putBoolean("import_flag", true).apply()
-            Log.d("DataImporter", "Import flag set to true after successful import")
-            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to true after successful import")
-            LoggingActivity.logMessage("Import", "All tables imported successfully")
-            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "All tables imported successfully")
-            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for all tables")
+        try {
+            runBlocking {
+                success = importGtfsData(context.filesDir.path + "/gtfs_data")
+            }
+            if (success) {
+                db.setTransactionSuccessful()
+                dbHelper.setImportComplete(true) // Set the import flag to true after successful import
+                val sharedPreferences = context.getSharedPreferences("TransportOfflinePrefs", Context.MODE_PRIVATE)
+                sharedPreferences.edit().putBoolean("import_flag", true).apply()
+                Log.d("DataImporter", "Import flag set to true after successful import")
+                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag set to true after successful import")
+                LoggingActivity.logMessage("Import", "All tables imported successfully")
+                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "All tables imported successfully")
+                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_VERBOSE, "Detailed import log for all tables")
 
-            // Log the specific stop number 16709
-            logSpecificStop(16709, db)
-        } else {
+                // Log the specific stop number 16709
+                logSpecificStop(16709, db)
+            } else {
+                dbHelper.setImportComplete(false)
+                Log.d("DataImporter", "Import flag remains false due to import failure")
+                LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag remains false due to import failure")
+            }
+        } catch (e: Exception) {
             dbHelper.setImportComplete(false)
-            Log.d("DataImporter", "Import flag remains false due to import failure")
-            LoggingControl.log(LoggingControl.LoggingGroup.IMPORT_SIMPLE, "Import flag remains false due to import failure")
+            Log.e("DataImporter", "Import error: ${e.message}")
+        } finally {
+            db.endTransaction()
+            db.close() // Ensure the database is closed
         }
-        db.endTransaction()
-        db.close() // Ensure the database is closed
-
         return success
     }
 
